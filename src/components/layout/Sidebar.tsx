@@ -1,23 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useContent } from '../../context/ContentContext';
 import { Topic } from '../../types';
-import { ChevronRightIcon, FolderIcon, SearchIcon, XIcon } from 'lucide-react'; // Import XIcon
+import { ChevronDownIcon, ChevronRightIcon, FolderIcon, SearchIcon, XIcon } from 'lucide-react';
 
 interface SidebarProps {
   currentTopicId?: string;
   isSidebarOpen: boolean;
-  toggleSidebar: () => void; // Add toggleSidebar to props
+  toggleSidebar: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   currentTopicId,
   isSidebarOpen,
-  toggleSidebar, // Destructure toggleSidebar from props
+  toggleSidebar,
 }) => {
   const { topics, getChildTopics } = useContent();
   const [searchTerm, setSearchTerm] = useState('');
   const rootTopics = getChildTopics(null);
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (Object.keys(expandedTopics).length === 0) {
+      const initialExpandedState: Record<string, boolean> = {};
+      rootTopics.forEach((topic) => (initialExpandedState[topic.id] = false));
+      setExpandedTopics(initialExpandedState);
+    }
+  }, [rootTopics]);
 
   const filterTopics = (topics: Topic[], term: string): Topic[] => {
     return topics.filter(topic =>
@@ -25,39 +34,52 @@ const Sidebar: React.FC<SidebarProps> = ({
     );
   };
 
-  const renderTopics = (parentTopics: Topic[]) => {
+  const toggleTopic = (topicId: string) => {
+    setExpandedTopics((prev) => ({
+      ...prev,
+      [topicId]: !prev[topicId],
+    }));
+  };
+
+  const renderTopics = (parentTopics: Topic[], level: number = 0) => {
     const filteredTopics = searchTerm ? filterTopics(parentTopics, searchTerm) : parentTopics;
 
     return (
-      <ul className="space-y-1">
+      <ul className={`space-y-1 ${level > 0 ? "ml-4 pl-2 border-l border-gray-200" : ""}`}>
         {filteredTopics.map((topic) => {
           const children = getChildTopics(topic.id);
           const isActive = topic.id === currentTopicId;
           const hasChildren = children.length > 0;
+          const paddingLeft = 4 + level * 2;
 
           return (
             <li key={topic.id}>
-              <Link
+              <Link 
                 to={`/topics/${topic.id}`}
+                onClick={(e) => {
+                  if (hasChildren) {
+                    e.preventDefault();
+                    toggleTopic(topic.id);
+                  }
+                }}
                 className={`
-                  flex items-center px-4 py-2 text-sm rounded-md transition-colors
-                  ${isActive
-                    ? 'bg-blue-100 text-blue-900 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'}
+                  flex items-center py-2 text-sm rounded-md transition-colors cursor-pointer
+                  ${isActive ? "bg-blue-100 text-blue-900 font-medium" : "text-gray-700 hover:bg-gray-100"}
                 `}
+                style={{ paddingLeft: `${paddingLeft}px` }}
               >
                 <FolderIcon size={18} className="mr-2 text-blue-800" />
                 <span>{topic.title}</span>
                 {hasChildren && (
-                  <ChevronRightIcon size={16} className="ml-auto" />
+                  <span className="ml-auto">
+                    {expandedTopics[topic.id] ? 
+                      <ChevronDownIcon size={16} /> : 
+                      <ChevronRightIcon size={16} />
+                    }
+                  </span>
                 )}
               </Link>
-
-              {hasChildren && !searchTerm && (
-                <div className="ml-4 pl-2 border-l border-gray-200">
-                  {renderTopics(children)}
-                </div>
-              )}
+              {hasChildren && expandedTopics[topic.id] && renderTopics(children, level + 1)}
             </li>
           );
         })}
@@ -70,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       className={`
         fixed top-0 left-0 z-40 w-72 h-screen bg-white shadow-lg transform transition-transform duration-300 ease-in-out
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        pt-16 // Add padding to account for the header
+        pt-16
       `}
     >
       {/* Close button */}
@@ -82,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <XIcon size={20} />
       </button>
 
-      <div className="p-4 overflow-y-auto h-[calc(100vh-100px)]"> {/* Adjust height to account for header and padding and close button */}
+      <div className="p-4 overflow-y-auto h-[calc(100vh-100px)]">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Navigation</h2>
 
@@ -101,10 +123,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(100vh-200px)]"> {/* Re-adjust inner scrollable area height */}
+        <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
           {rootTopics.length > 0 ? (
             renderTopics(rootTopics)
-          ) : (
+          ) : ( 
             <p className="text-sm text-gray-500">No topics available</p>
           )}
         </div>
