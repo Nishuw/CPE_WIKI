@@ -23,7 +23,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
   if (!isAuthenticated) {
@@ -38,7 +38,7 @@ const AdminRoute: React.FC = () => {
   const { isAdmin, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
   if (!isAdmin) {
@@ -58,7 +58,7 @@ function App() {
   return (
     <AuthProvider>
       <ContentProvider>
-        <Router>
+        <Router>   
           <Routes>
             {/* Public Route (Login) */}
             <Route path="/login" element={<LoginPage />} />

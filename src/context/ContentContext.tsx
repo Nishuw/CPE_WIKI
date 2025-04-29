@@ -32,7 +32,7 @@ interface ContentContextType {
   getChildTopics: (parentId: string | null) => Topic[];
 }
 
-// Remove initial mock data as we will fetch from Firestore
+
 // const initialTopics: Topic[] = [...];
 // const initialContents: Content[] = [...];
 
@@ -70,7 +70,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setLoading(false);
     }, (err) => {
       console.error("ContentContext: Error listening to topics:", err);
-      setError('Failed to load topics.');
+      setError('Falha ao carregar os tópicos.');
       setLoading(false);
     });
 
@@ -84,7 +84,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setLoading(false);
     }, (err) => {
       console.error("ContentContext: Error listening to contents:", err);
-      setError('Failed to load contents.');
+      setError('Falha ao carregar os conteúdos.');
       setLoading(false);
     });
 
@@ -92,7 +92,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => {
       unsubscribeTopics();
       unsubscribeContents();
-    };
+    }
 
   }, [isAuthenticated]); // Re-run when authentication status changes
 
@@ -116,7 +116,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // --- Firestore Write Operations ---
 
   const addTopic = async (title: string, parentId: string | null) => {
-    if (!user) { console.error("User not authenticated."); return; }
+    if (!user) { console.error("Usuário não autenticado."); return; }
     try {
       await addDoc(collection(db, 'topics'), {
         title,
@@ -124,18 +124,18 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         parentId,
         // createdBy: user.id, // This was causing the error. User object might not have id yet or it's undefined.
         // Using user.uid from Firebase Auth User object instead.
-        createdBy: user.uid, 
+        createdBy: user.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
     } catch (e) {
       console.error("Error adding topic: ", e);
-      setError('Failed to add topic.');
+      setError('Falha ao adicionar o tópico.');
     }
   };
 
-  const updateTopic = async (id: string, title: string) => {
-    if (!user) { console.error("User not authenticated."); return; }
+ const updateTopic = async (id: string, title: string) => {
+    if (!user) { console.error("Usuário não autenticado."); return; }
     try {
       const topicRef = doc(db, 'topics', id);
       await updateDoc(topicRef, {
@@ -145,12 +145,12 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
     } catch (e) {
       console.error("Error updating topic: ", e);
-       setError('Failed to update topic.');
+       setError('Falha ao atualizar o tópico.');
     }
   };
 
-  const deleteTopic = async (id: string) => {
-    if (!user) { console.error("User not authenticated."); return; }
+ const deleteTopic = async (id: string) => {
+    if (!user) { console.error("Usuário não autenticado."); return; }
 
     // Find all descendant topics and associated content
     const allTopicIdsToDelete = [id, ...getAllDescendantTopicIds(id, topics)];
@@ -179,14 +179,14 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     } catch (e) {
       console.error("Error performing batched delete:", e);
-      setError('Failed to delete topic and associated content.');
+      setError('Falha ao excluir o tópico e o conteúdo associado.');
        // Optionally revert local state if batch fails? Or rely on re-fetching/listeners?
        // For now, let listeners handle it, as they should report the current state.
     }
   };
 
-  const addContent = async (topicId: string, title: string, body: string) => {
-     if (!user) { console.error("User not authenticated."); return; }
+ const addContent = async (topicId: string, title: string, body: string) => {
+     if (!user) { console.error("Usuário não autenticado."); return; }
     try {
       await addDoc(collection(db, 'contents'), {
         topicId,
@@ -198,12 +198,12 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
     } catch (e) {
       console.error("Error adding content: ", e);
-       setError('Failed to add content.');
+       setError('Falha ao adicionar o conteúdo.');
     }
   };
 
-  const updateContent = async (id: string, title: string, body: string) => {
-     if (!user) { console.error("User not authenticated."); return; }
+ const updateContent = async (id: string, title: string, body: string) => {
+     if (!user) { console.error("Usuário não autenticado."); return; }
     try {
       const contentRef = doc(db, 'contents', id);
       await updateDoc(contentRef, {
@@ -212,18 +212,18 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updatedAt: serverTimestamp(),
       });
     } catch (e) {
-      console.error("Error updating content: ", e);
-       setError('Failed to update content.');
+      console.error("Erro ao atualizar o conteúdo: ", e);
+       setError('Falha ao atualizar o conteúdo.');
     }
   };
 
-  const deleteContent = async (id: string) => {
-     if (!user) { console.error("User not authenticated."); return; }
+ const deleteContent = async (id: string) => {
+     if (!user) { console.error("Usuário não autenticado."); return; }
     try {
       await deleteDoc(doc(db, 'contents', id));
     } catch (e) {
-      console.error("Error deleting content:", e);
-       setError('Failed to delete content.');
+      console.error("Erro ao excluir o conteúdo:", e);
+       setError('Falha ao excluir o conteúdo.');
     }
   };
 
@@ -245,7 +245,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const getChildTopics = (parentId: string | null) => {
     return topics.filter(topic => topic.parentId === parentId);
   };
-
+  
 
   return (
     <ContentContext.Provider value={{
@@ -270,7 +270,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 export const useContent = () => {
   const context = useContext(ContentContext);
   if (context === undefined) {
-    throw new Error('useContent must be used within a ContentProvider');
+    throw new Error('useContent deve ser usado dentro de um ContentProvider');
   }
   return context;
 };

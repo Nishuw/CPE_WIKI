@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { useContent } from '../context/ContentContext';
 import Layout from '../components/layout/Layout';
 import { FileTextIcon, FolderIcon } from 'lucide-react';
-
 const TopicPage: React.FC = () => {
   const { topicId = '' } = useParams<{ topicId: string }>();
   const { 
@@ -15,34 +14,31 @@ const TopicPage: React.FC = () => {
   const topic = getTopicById(topicId);
   const childTopics = getChildTopics(topicId);
   const contents = getContentsByTopicId(topicId);
-  
   if (!topic) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Topic not found</h2>
-        <p className="text-gray-600 mb-4">The topic you are looking for does not exist or has been removed.</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Tópico não encontrado</h2>
+        <p className="text-gray-600 mb-4">O tópico que você está procurando não existe ou foi removido.</p>
         <Link to="/" className="text-blue-900 hover:underline">
-          Return to homepage
-        </Link>
+          Voltar para a página inicial
+       </Link>
       </div>
     );
   }
-  
   return (
     <>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{topic.title}</h1>
           <p className="text-gray-600">
-            Last updated: {new Date(topic.updatedAt).toLocaleDateString()}
+            Última atualização: {new Date(topic.updatedAt).toLocaleDateString()}
           </p>
         </div>
-        
         {/* Child topics section */}
         {childTopics.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Subtopics</h2>
-            <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
               {childTopics.map(childTopic => (
                 <Link 
                   key={childTopic.id} 
@@ -58,11 +54,10 @@ const TopicPage: React.FC = () => {
             </div>
           </div>
         )}
-        
         {/* Contents section */}
         {contents.length > 0 ? (
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Content</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Conteúdo</h2>
             <ul className="space-y-4">
               {contents.map(content => (
                 <li key={content.id}>
@@ -82,7 +77,7 @@ const TopicPage: React.FC = () => {
         ) : (
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <p className="text-gray-500 py-4">
-              No content available for this topic yet.
+              Nenhum conteúdo disponível para este tópico ainda.
             </p>
           </div>
         )}
@@ -90,5 +85,4 @@ const TopicPage: React.FC = () => {
     </>
   );
 };
-
 export default TopicPage;

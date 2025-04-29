@@ -2,7 +2,6 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import AuthForm from '../components/auth/AuthForm'; // Importa o novo componente unificado
 import { useAuth } from '../context/AuthContext';
-import Spinner from '../components/ui/Spinner'; // Opcional: para indicar loading
 
 const LoginPage: React.FC = () => {
   const { isAuthenticated, isLoading, isAdmin } = useAuth(); // Pega isLoading e isAdmin

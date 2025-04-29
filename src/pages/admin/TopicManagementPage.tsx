@@ -68,14 +68,14 @@ const TopicManagementPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Topic Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Gerenciamento de Tópicos</h1>
         <p className="text-gray-600 mt-2">
-          Create, edit, and organize topics to structure your content.
+          Crie, edite e organize tópicos para estruturar seu conteúdo.
         </p>
       </div>
 
       {showForm ? (
-        <div className="mb-8">
+        <div className="mb-8"> 
           <TopicForm
             topicId={editingTopicId}
             parentId={parentTopicId}
@@ -86,7 +86,7 @@ const TopicManagementPage: React.FC = () => {
               onClick={() => setShowForm(false)}
               className="text-gray-600 hover:text-gray-900"
             >
-              Cancel and return to topic list
+              Cancelar e retornar à lista de tópicos
             </button>
           </div>
         </div>

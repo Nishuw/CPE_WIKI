@@ -24,15 +24,15 @@ const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("AdminDashboard useEffect running.");
-    console.log("isLoading:", isLoading);
-    console.log("isAuthenticated:", isAuthenticated);
-    console.log("isAdmin:", isAdmin);
+    console.log('AdminDashboard useEffect running.');
+    console.log('isLoading:', isLoading);
+    console.log('isAuthenticated:', isAuthenticated);
+    console.log('isAdmin:', isAdmin);
 
     let unsubscribeTopics: () => void;
     let unsubscribeContents: () => void;
 
-    if (!isLoading && isAuthenticated && isAdmin) {
+    if (!isLoading && isAuthenticated && isAdmin) { // Changed from (!isLoading && isAuthenticated && isAdmin)
       console.log("AdminDashboard: User is authenticated and admin. Setting up listeners.");
       const fetchCounts = async () => {
         try {
@@ -54,7 +54,7 @@ const AdminDashboard: React.FC = () => {
       // Set up real-time listener for topic count
       const topicsCollection = collection(db, 'topics');
       unsubscribeTopics = onSnapshot(topicsCollection, (snapshot) => {
-        console.log("Topics snapshot received. Size:", snapshot.size);
+        console.log('Topics snapshot received. Size:', snapshot.size);
         setTopicCount(snapshot.size);
       }, (err) => {
         console.error("Error listening to topics collection:", err);
@@ -69,7 +69,7 @@ const AdminDashboard: React.FC = () => {
       // Set up real-time listener for content count
       const contentCollection = collection(db, 'contents');
       unsubscribeContents = onSnapshot(contentCollection, (snapshot) => {
-         console.log("Contents snapshot received. Size:", snapshot.size);
+         console.log('Contents snapshot received. Size:', snapshot.size);
         setContentCount(snapshot.size);
       }, (err) => {
         console.error("Error listening to contents collection:", err);
@@ -83,7 +83,7 @@ const AdminDashboard: React.FC = () => {
 
       fetchCounts();
     } else if (!isLoading && (!isAuthenticated || !isAdmin)) {
-       console.log("AdminDashboard: User not authenticated or not admin. Clearing counts.");
+       console.log('AdminDashboard: User not authenticated or not admin. Clearing counts.');
        // Clear counts and set error if not authenticated or not admin
        setTopicCount(0);
        setContentCount(0);
@@ -91,18 +91,18 @@ const AdminDashboard: React.FC = () => {
        if (!isAuthenticated) setError('Você precisa estar logado para ver o painel de administração.');
        else if (!isAdmin) setError('Você não tem permissão para acessar esta página.');
     } else if (isLoading) {
-      console.log("AdminDashboard: Loading...");
+      console.log('AdminDashboard: Loading...');
     }
 
     // Cleanup listeners on component unmount
     return () => {
-      console.log("AdminDashboard cleanup running.");
+      console.log('AdminDashboard cleanup running.');
       if (unsubscribeTopics) {
-        console.log("Unsubscribing from topics listener.");
+        console.log('Unsubscribing from topics listener.');
         unsubscribeTopics();
       }
       if (unsubscribeContents) {
-         console.log("Unsubscribing from contents listener.");
+         console.log('Unsubscribing from contents listener.');
         unsubscribeContents();
       }
     };
@@ -112,10 +112,10 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Painel de Administração</h1>
         <p className="text-gray-600 mt-2">
-          Welcome back, {user?.username}! Manage your content platform here.
-        </p>
+         Bem-vindo de volta, {user?.username}! Gerencie sua plataforma CPE - WIKI aqui.
+          </p>
       </div>
 
       {/* Stats overview */}
@@ -127,7 +127,7 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-900">{topicCount}</p>
-              <p className="text-gray-600">Topics</p>
+              <p className="text-gray-600">Tópicos</p>
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-900">{contentCount}</p>
-              <p className="text-gray-600">Content items</p>
+              <p className="text-gray-600">Itens de conteúdo</p>
             </div>
           </div>
         </div>
@@ -151,15 +151,15 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-900">{userCount}</p>
-              <p className="text-gray-600">Users</p>
+              <p className="text-gray-600">Usuários</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Quick actions */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8"> 
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Ações rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link to="/admin/topics">
             <Button
@@ -198,7 +198,7 @@ const AdminDashboard: React.FC = () => {
 
       {/* Recent activity - simplified for this demo */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Atividade Recente</h2>
         <div className="space-y-4">
           {contents.slice(0, 5).map(content => (
             <div key={content.id} className="flex items-start border-b border-gray-100 pb-4 last:border-0">
@@ -206,7 +206,7 @@ const AdminDashboard: React.FC = () => {
               <div>
                 <p className="font-medium text-gray-900">{content.title}</p>
                 <p className="text-sm text-gray-500">
-                  Updated {new Date(content.updatedAt).toLocaleDateString()}
+                  Atualizado {new Date(content.updatedAt).toLocaleDateString()}
                 </p>
               </div>
             </div>

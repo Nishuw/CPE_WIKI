@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useContent } from '../../context/ContentContext';
 import { Topic } from '../../types';
@@ -17,16 +17,19 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { topics, getChildTopics } = useContent();
   const [searchTerm, setSearchTerm] = useState('');
-  const rootTopics = getChildTopics(null);
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
+  const prevTopicIdRef = React.useRef<string | undefined>(undefined);
 
-  useEffect(() => {
-    if (Object.keys(expandedTopics).length === 0) {
-      const initialExpandedState: Record<string, boolean> = {};
-      rootTopics.forEach((topic) => (initialExpandedState[topic.id] = false));
-      setExpandedTopics(initialExpandedState);
-    }
+  const rootTopics = useMemo(() => {
+    return getChildTopics(null);
+  }, [getChildTopics]);
+
+  useEffect(() => {   
+    const initialExpandedState: Record<string, boolean> = {};
+    rootTopics.forEach((topic) => (initialExpandedState[topic.id] = false));
+    setExpandedTopics(initialExpandedState);
   }, [rootTopics]);
+
 
   const filterTopics = (topics: Topic[], term: string): Topic[] => {
     return topics.filter(topic =>
@@ -35,12 +38,20 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const toggleTopic = (topicId: string) => {
-    setExpandedTopics((prev) => ({
-      ...prev,
-      [topicId]: !prev[topicId],
-    }));
+      if (prevTopicIdRef.current !== currentTopicId) {
+          setExpandedTopics((prev) => {
+              const newState: Record<string, boolean> = {};
+              rootTopics.forEach((topic) => (newState[topic.id] = false));
+              return newState;
+          });
+          prevTopicIdRef.current = currentTopicId;
+      } else {
+          setExpandedTopics((prev) => ({
+              ...prev,
+              [topicId]: !prev[topicId],
+          }));
+      }
   };
-
   const renderTopics = (parentTopics: Topic[], level: number = 0) => {
     const filteredTopics = searchTerm ? filterTopics(parentTopics, searchTerm) : parentTopics;
 

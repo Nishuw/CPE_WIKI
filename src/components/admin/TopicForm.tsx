@@ -9,7 +9,7 @@ interface TopicFormProps {
   parentId?: string | null;
   onSuccess?: () => void;
 }
-
+ 
 const TopicForm: React.FC<TopicFormProps> = ({ 
   topicId, 
   parentId = null,
@@ -40,7 +40,7 @@ const TopicForm: React.FC<TopicFormProps> = ({
     setError('');
     
     if (!title.trim()) {
-      setError('Title is required');
+      setError('O título é obrigatório');
       return;
     }
     
@@ -56,14 +56,14 @@ const TopicForm: React.FC<TopicFormProps> = ({
         onSuccess();
       }
     } catch (err) {
-      setError('Failed to save topic');
+      setError('Falha ao salvar o tópico');
     }
   };
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-sm">
       <h2 className="text-xl font-semibold text-gray-800">
-        {isEditing ? 'Edit Topic' : 'Create New Topic'}
+        {isEditing ? 'Editar Tópico' : 'Criar Novo Tópico'}
       </h2>
       
       {error && (
@@ -73,32 +73,32 @@ const TopicForm: React.FC<TopicFormProps> = ({
       )}
       
       <Input
-        id="topic-title"
-        label="Topic Title"
-        type="text"
-        required
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Enter topic title"
-      />
-      
-      {parentId && (
-        <div className="text-sm text-gray-500">
-          This topic will be created under: {getTopicById(parentId)?.title || 'Root'}
-        </div>
-      )}
-      
-      <div className="flex justify-end space-x-4">
-        <Button
-          type="submit"
-          variant="primary"
-          icon={isEditing ? <SaveIcon size={16} /> : <PlusIcon size={16} />}
-        >
-          {isEditing ? 'Save Changes' : 'Create Topic'}
-        </Button>
-      </div>
-    </form>
-  );
-};
+          id="topic-title"
+          label="Título do Tópico"
+          type="text"
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Insira o título do tópico"
+        />
 
-export default TopicForm;
+        {parentId && (
+          <div className="text-sm text-gray-500">
+            Este tópico será criado em: {getTopicById(parentId)?.title || 'Raiz'}
+          </div>
+        )}
+
+        <div className="flex justify-end space-x-4">
+          <Button
+            type="submit"
+            variant="primary"
+            icon={isEditing ? <SaveIcon size={16} /> : <PlusIcon size={16} />}
+          >
+            {isEditing ? 'Salvar Alterações' : 'Criar Tópico'}
+          </Button>
+        </div>
+      </form>
+    );
+  };
+ 
+  export default TopicForm;

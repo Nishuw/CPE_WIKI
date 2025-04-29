@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import Button from '../ui/Button';
+import Button from '../ui/Button'; 
 import Input from '../ui/Input';
 import { LockIcon, MailIcon } from 'lucide-react';
 
@@ -42,7 +42,7 @@ const AuthForm: React.FC = () => {
     // Não precisamos mais do navigate aqui.
   };
 
-  // Função para alternar entre os modos
+  // Function to toggle between modes
   const toggleMode = () => {
     setMode(isLoginMode ? 'signup' : 'login');
     setEmail(''); // Limpa campos ao trocar de modo
@@ -56,16 +56,16 @@ const AuthForm: React.FC = () => {
     <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-xl border border-gray-200">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          {isLoginMode ? 'Login' : 'Criar Conta'}
+          {isLoginMode ? 'Entrar' : 'Criar Conta'}
         </h1>
         <p className="text-gray-600">
-          {isLoginMode ? 'Entre com suas credenciais' : 'Preencha os dados para registrar'}
+          {isLoginMode ? 'Entre com suas credenciais' : 'Preencha os dados para se registrar'}
         </p>
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit}>
         {(authError || localError) && ( // Mostra erro do AuthContext ou erro local
-          <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md border border-red-200">
+          <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md border border-red-200" data-testid="auth-error">
             {localError || authError}
           </div>
         )}
@@ -76,7 +76,7 @@ const AuthForm: React.FC = () => {
           type="email"
           required
           autoComplete="email"
-          placeholder="seu@email.com"
+          placeholder="seuemail@exemplo.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="pl-10"
@@ -120,11 +120,11 @@ const AuthForm: React.FC = () => {
           className="w-full !mt-8" // Adiciona !mt-8 para garantir margem superior
           disabled={isLoading}
         >
-          {isLoading ? (isLoginMode ? 'Entrando...' : 'Registrando...') : (isLoginMode ? 'Entrar' : 'Registrar')}
+          {isLoading ? (isLoginMode ? 'Entrando...' : 'Cadastrando...') : (isLoginMode ? 'Entrar' : 'Cadastrar')}
         </Button>
 
          {/* Link para alternar entre modos */}
-         <p className="text-sm text-center text-gray-600 !mt-6">
+         <p className="text-sm text-center text-gray-600 !mt-6" data-testid="toggle-mode-text">
            {isLoginMode ? 'Não tem uma conta?' : 'Já tem uma conta?'}
            <button
              type="button" // Importante para não submeter o form
@@ -132,7 +132,7 @@ const AuthForm: React.FC = () => {
              className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded"
              disabled={isLoading}
            >
-             {isLoginMode ? 'Registre-se' : 'Faça Login'}
+             {isLoginMode ? 'Cadastre-se' : 'Faça Login'}
            </button>
          </p>
 

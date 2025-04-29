@@ -30,14 +30,14 @@ const ContentEditPage: React.FC = () => {
           className="inline-flex items-center text-blue-900 hover:underline"
         >
           <ArrowLeftIcon size={16} className="mr-1" />
-          Back to {topic.title}
+          Voltar para {topic.title}
         </Link>
       </div>
       
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Edit Content</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Editar Conteúdo</h1>
         <p className="text-gray-600 mt-2">
-          Editing content for {topic.title}
+          Editando conteúdo para {topic.title}
         </p>
       </div>
       

@@ -25,12 +25,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           {/* Sidebar toggle button */}
           <button 
             onClick={toggleSidebar}
-            className="mr-4 p-2 rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-700"
-            aria-label="Toggle sidebar"
+            className="mr-4 p-2 rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-700"            
+            aria-label="Alternar barra lateral"
           >
             <MenuIcon size={24} />
           </button>
-          <Link to="/" className="text-2xl font-bold">ContentHub</Link>
+          <Link to="/" className="text-2xl font-bold">CPE - WIKI</Link>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                   to="/admin" // Link to the admin dashboard route
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-800 rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Admin Dashboard
+                  Painel Admin
                 </Link>
               )}
               <Button 
@@ -51,8 +51,8 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                 onClick={handleLogout}
                 icon={<LogOutIcon size={16} />}
                 className="text-white hover:bg-blue-800"
-              >
-                Logout
+              > {/* Fechar Sessão */}
+                Sair
               </Button>
             </div>
           ) : (
@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               to="/login" 
               className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-800 rounded-full hover:from-blue-700 hover:to-blue-900 transition-all shadow-lg hover:shadow-xl"
             >
-              Sign In
+              Entrar
             </Link>
           )}
         </div>

@@ -10,10 +10,10 @@ const HomePage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to ContentHub</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Bem-vindo ao CPE - WIKI</h1>
         <p className="text-lg text-gray-600">
-          Your central place for organizing and accessing important content
-        </p>
+          Seu local central para organizar e acessar conteúdos importantes
+       </p>
       </div>
       
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -32,7 +32,7 @@ const HomePage: React.FC = () => {
                   <div>
                     <h3 className="font-medium text-lg text-blue-900">{topic.title}</h3>
                     <p className="text-gray-600 mt-1">
-                      Browse content in this category
+                      Navegue pelo conteúdo nesta categoria
                     </p>
                   </div>
                 </div>
@@ -40,7 +40,7 @@ const HomePage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 text-center py-6">No content categories available yet</p>
+          <p className="text-gray-500 text-center py-6">Nenhuma categoria de conteúdo disponível ainda</p>
         )}
       </div>
       
@@ -48,12 +48,12 @@ const HomePage: React.FC = () => {
         <div className="flex items-start">
           <BookOpenIcon size={24} className="text-blue-900 mr-3 mt-1" />
           <div>
-            <h3 className="font-medium text-lg text-blue-900">About ContentHub</h3>
+            <h3 className="font-medium text-lg text-blue-900">Sobre o CPE - WIKI</h3>
             <p className="text-gray-600 mt-1">
-              ContentHub is a platform for organizing and accessing important content. 
-              Browse categories, view detailed information, and find exactly what you need.
-            </p>
-          </div>
+              O CPE - WIKI é uma plataforma para organizar e acessar conteúdos importantes. 
+              Navegue pelas categorias, veja informações detalhadas e encontre exatamente o que você precisa.
+          </p>
+       </div>
         </div>
       </div>
     </div>

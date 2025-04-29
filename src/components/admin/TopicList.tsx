@@ -73,7 +73,7 @@ const TopicList: React.FC<TopicListProps> = ({ onAddTopic, onEditTopic, onReques
                 }}
                 icon={<EditIcon size={16} />}
               >
-                Edit
+                Editar
               </Button>
               <Button 
                 variant="ghost"
@@ -82,7 +82,7 @@ const TopicList: React.FC<TopicListProps> = ({ onAddTopic, onEditTopic, onReques
                 icon={<TrashIcon size={16} />}
                 className="text-red-600 hover:text-red-800"
               >
-                Delete
+                Excluir
               </Button>
               {onAddTopic && (
                 <Button 
@@ -94,7 +94,7 @@ const TopicList: React.FC<TopicListProps> = ({ onAddTopic, onEditTopic, onReques
                   }}
                   icon={<PlusIcon size={16} />}
                 >
-                  Add Subtopic
+                  Adicionar Subtópico
                 </Button>
               )}
             </div>
@@ -112,7 +112,7 @@ const TopicList: React.FC<TopicListProps> = ({ onAddTopic, onEditTopic, onReques
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
       <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
         <h3 className="text-lg leading-6 font-medium text-gray-900">
-          Topics
+          Tópicos
         </h3>
         {onAddTopic && (
           <Button 
@@ -120,7 +120,7 @@ const TopicList: React.FC<TopicListProps> = ({ onAddTopic, onEditTopic, onReques
             onClick={() => onAddTopic(null)}
             icon={<PlusIcon size={16} />}
           >
-            Add Root Topic
+            Adicionar Tópico Raiz
           </Button>
         )}
       </div>
@@ -129,22 +129,22 @@ const TopicList: React.FC<TopicListProps> = ({ onAddTopic, onEditTopic, onReques
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Topic Name
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> 
+                Nome do Tópico
               </th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                Ações
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {rootTopics.length > 0 ? (
               rootTopics.map(topic => renderTopicItem(topic))
-            ) : (
+            ) : ( 
               <tr>
                 <td colSpan={2} className="px-6 py-4 text-center text-sm text-gray-500">
                   No topics available. Create your first topic to get started.
-                </td>
+                </td>                                   
               </tr>
             )}
           </tbody>
