@@ -45,7 +45,11 @@ const AdminRoute: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <Layout>
+        <Outlet />
+    </Layout>
+  );
 };
 
 function App() {
@@ -84,7 +88,7 @@ function App() {
               }
             >
               {/* Nested Admin routes - rendered via Outlet in AdminRoute */}
-              <Route index element={<AdminDashboard />} />
+                <Route index element={<AdminDashboard />} />
               <Route path="topics" element={<TopicManagementPage />} />
               <Route path="topics/new" element={<NewTopicPage />} />
               <Route path="topics/:topicId" element={<TopicDetailPage />} />
