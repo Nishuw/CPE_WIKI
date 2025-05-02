@@ -39,7 +39,52 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
   // Função para processar quebras de linha no texto para HTML
   const processLineBreaks = (text: string): string => {
     // Substitui todas as quebras de linha por tags <br>
+    if (!text) return '';
     return text.split('\n').map(line => line.trim()).join('<br />');
+  };
+
+  // Função mais avançada para preservar quebras de linha mesmo com tags HTML
+  const preserveLineBreaks = (htmlText: string): string => {
+    // Se o texto está vazio, retorna vazio
+    if (!htmlText.trim()) return '';
+    
+    // Se não houver quebras de linha, retorna o texto original
+    if (!htmlText.includes('\n')) return htmlText;
+    
+    // Verifica se o texto contém tags HTML
+    const hasHtml = /<[a-z][\s\S]*>/i.test(htmlText);
+    
+    if (!hasHtml) {
+      // Texto puro sem HTML: simplesmente envolve em <p> e converte quebras de linha
+      return `<p>${processLineBreaks(htmlText)}</p>`;
+    } else {
+      // Texto com HTML: precisamos preservar as tags e ainda assim manter as quebras de linha
+      // Esta abordagem simplificada substitui quebras de linha por <br /> fora das tags
+      const segments = htmlText.split('\n');
+      let result = '';
+      let insideTag = false;
+      
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        
+        // Se for o último segmento, não adicione <br />
+        if (i === segments.length - 1) {
+          result += segment;
+          continue;
+        }
+        
+        // Conta as tags abertas e fechadas para determinar se estamos dentro de uma tag
+        for (let j = 0; j < segment.length; j++) {
+          if (segment[j] === '<') insideTag = true;
+          else if (segment[j] === '>') insideTag = false;
+        }
+        
+        // Adiciona <br /> apenas se não estivermos dentro de uma tag
+        result += segment + (!insideTag ? '<br />' : '\n');
+      }
+      
+      return result;
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,12 +97,8 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     }
 
     try {      
-      // Processar o conteúdo para preservar quebras de linha se o texto não contiver tags HTML
-      let processedBody = body;
-      if (!body.includes('<') && !body.includes('>')) {
-        // Se o texto não contém tags HTML, processamos as quebras de linha
-        processedBody = `<p>${processLineBreaks(body)}</p>`;
-      }
+      // Processar o conteúdo para preservar quebras de linha, mesmo com tags HTML
+      const processedBody = preserveLineBreaks(body);
       
       if (isEditing && contentId) {
         updateContent(contentId, title, processedBody);
@@ -75,12 +116,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 
   // Função para renderizar a prévia com as quebras de linha preservadas
   const renderPreview = () => {
-    if (body.includes('<') && body.includes('>')) {
-      return body; // Se já contém HTML, retorna como está
-    } else {
-      // Se é texto puro, substitui quebras de linha por <br>
-      return `<p>${processLineBreaks(body)}</p>`;
-    }
+    return preserveLineBreaks(body);
   };
 
   return (
@@ -166,11 +202,11 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
             rows={10}
             value={body}
             onChange={(e) => setBody(e.target.value)}            
-            placeholder="Insira o conteúdo. Pressione Enter para novas linhas."
+            placeholder="Insira o conteúdo. Pressione Enter para novas linhas. Você pode combinar HTML com quebras de linha."
           />
         </div>
         <p className="mt-1 text-xs text-gray-500">
-          Você pode usar tags HTML para formatação ou simplesmente pressionar Enter para quebras de linha.
+          Você pode usar tags HTML para formatação e também pressionar Enter para quebras de linha. As quebras serão preservadas mesmo ao usar as tags HTML.
         </p>
       </div>
 
