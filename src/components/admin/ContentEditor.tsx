@@ -24,7 +24,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     getContentById 
   } = useContent();
   
-  const isEditing = !!contentId
+  const isEditing = !!contentId;
   
   useEffect(() => {    
     if (contentId) {
@@ -36,6 +36,12 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     }
   }, [contentId, getContentById]);
 
+  // Função para processar quebras de linha no texto para HTML
+  const processLineBreaks = (text: string): string => {
+    // Substitui todas as quebras de linha por tags <br>
+    return text.split('\n').map(line => line.trim()).join('<br />');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -46,10 +52,17 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     }
 
     try {      
+      // Processar o conteúdo para preservar quebras de linha se o texto não contiver tags HTML
+      let processedBody = body;
+      if (!body.includes('<') && !body.includes('>')) {
+        // Se o texto não contém tags HTML, processamos as quebras de linha
+        processedBody = `<p>${processLineBreaks(body)}</p>`;
+      }
+      
       if (isEditing && contentId) {
-        updateContent(contentId, title, body);
+        updateContent(contentId, title, processedBody);
       } else {
-        addContent(topicId, title, body);
+        addContent(topicId, title, processedBody);
       }
       
       if (onSuccess) {
@@ -57,6 +70,16 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       }
     } catch (err) {
       setError('Falha ao salvar o conteúdo');
+    }
+  };
+
+  // Função para renderizar a prévia com as quebras de linha preservadas
+  const renderPreview = () => {
+    if (body.includes('<') && body.includes('>')) {
+      return body; // Se já contém HTML, retorna como está
+    } else {
+      // Se é texto puro, substitui quebras de linha por <br>
+      return `<p>${processLineBreaks(body)}</p>`;
     }
   };
 
@@ -131,6 +154,9 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
             >
               Imagem
             </button>
+            <p className="text-xs text-gray-500 ml-2 flex items-center">
+              Dica: Pressione Enter para criar novas linhas no texto
+            </p>
           </div>
 
           {/* Content textarea */}
@@ -140,11 +166,11 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
             rows={10}
             value={body}
             onChange={(e) => setBody(e.target.value)}            
-            placeholder="Insira o conteúdo em formato HTML"
+            placeholder="Insira o conteúdo. Pressione Enter para novas linhas."
           />
         </div>
         <p className="mt-1 text-xs text-gray-500">
-          Você pode usar tags HTML para formatação. Use os botões acima para inserir elementos comuns.
+          Você pode usar tags HTML para formatação ou simplesmente pressionar Enter para quebras de linha.
         </p>
       </div>
 
@@ -153,7 +179,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
         <h3 className="block text-sm font-medium text-gray-700 mb-1">Pré-visualização</h3>
         <div 
           className="border border-gray-300 rounded-md p-4 prose max-w-none bg-white"
-          dangerouslySetInnerHTML={{ __html: body }}
+          dangerouslySetInnerHTML={{ __html: renderPreview() }}
         />
       </div>
       
