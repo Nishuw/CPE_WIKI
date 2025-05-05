@@ -8,11 +8,12 @@ export interface User {
 export interface Topic {
   id: string;
   title: string;
-  slug: string;
-  parentId: string | null;
+  slug: string; // Mantive o slug que não estava no meu exemplo anterior
+  parent: string | null; // Corrigi para 'parent' como no seu código anterior
   createdAt: string;
   updatedAt: string;
   createdBy: string;
+  position: number; // <-- Linha adicionada
 }
 
 export interface Content {

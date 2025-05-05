@@ -1,127 +1,211 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useContent } from '../../context/ContentContext';
-import Button from '../ui/Button';
-// Import ArrowRightLeftIcon
-import { PlusIcon, EditIcon, TrashIcon, ChevronDownIcon, ChevronRightIcon, ArrowRightLeftIcon } from 'lucide-react';
+import Button from '../ui/Button'; // Assuming Button component exists
+import { Topic } from '../../types'; // Import Topic type explicitly
 
+// Import necessary icons, including Up and Down arrows
+import {
+  PlusIcon,
+  EditIcon,
+  TrashIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ArrowRightLeftIcon,
+  ArrowUpIcon,    // <-- Add ArrowUpIcon
+  ArrowDownIcon   // <-- Add ArrowDownIcon
+} from 'lucide-react';
+
+// Define the props for the TopicList component
 interface TopicListProps {
-  onAddTopic?: (parentId: string | null) => void;
-  onEditTopic?: (topicId: string) => void;
-  onRequestDeleteTopic: (topicId: string) => void;
-  onRequestMoveTopic: (topicId: string) => void; // Add new prop for move action
+  onAddTopic?: (parentId: string | null) => void; // Optional: Function to trigger adding a topic
+  onEditTopic?: (topicId: string) => void; // Optional: Function to trigger editing a topic
+  onRequestDeleteTopic: (topicId: string) => void; // Required: Function to request topic deletion
+  onRequestMoveTopic: (topicId: string) => void; // Required: Function to request moving topic (to different parent)
+  onRequestReorderTopic: (topicId: string, direction: 'up' | 'down') => void; // <-- New Prop for reordering
 }
 
-const TopicList: React.FC<TopicListProps> = ({ onAddTopic, onEditTopic, onRequestDeleteTopic, onRequestMoveTopic }) => {
+const TopicList: React.FC<TopicListProps> = ({
+  onAddTopic,
+  onEditTopic,
+  onRequestDeleteTopic,
+  onRequestMoveTopic,
+  onRequestReorderTopic // <-- Receive the new prop
+}) => {
+  // Get data and functions from the content context
   const { topics, getChildTopics } = useContent();
+  // State to keep track of which topics are expanded to show children
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
 
-  // Ensure topics are available and getChildTopics is ready
+  // Show loading indicator if topics or the getter function aren't ready yet
   if (!topics || !getChildTopics) {
-    return <div>Carregando tópicos...</div>; // Or some other loading indicator
+    return <div>Carregando tópicos...</div>;
   }
 
+  // Get the root topics (topics with no parent) using the (now ordering) getChildTopics function
   const rootTopics = getChildTopics(null);
 
+  // Toggles the expanded state of a topic
   const toggleExpand = (topicId: string) => {
     setExpandedTopics(prev =>
       prev.includes(topicId)
-        ? prev.filter(id => id !== topicId)
-        : [...prev, topicId]
+        ? prev.filter(id => id !== topicId) // Remove if already included (collapse)
+        : [...prev, topicId] // Add if not included (expand)
     );
   };
 
+  // Handler for delete button click
   const handleDeleteTopicClick = (topicId: string, event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    onRequestDeleteTopic(topicId);
+    event.preventDefault(); // Prevent default link behavior if any
+    event.stopPropagation(); // Prevent event bubbling up (e.g., to row click)
+    onRequestDeleteTopic(topicId); // Call the prop function
   };
 
-  // New handler for Move button click
+  // Handler for move button (change parent) click
   const handleMoveTopicClick = (topicId: string, event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    onRequestMoveTopic(topicId); // Call the new prop function
+    onRequestMoveTopic(topicId); // Call the prop function
   };
 
-  const renderTopicItem = (topic: any, level: number = 0) => {
+  // *** Recursive function to render each topic item and its children ***
+  // Now accepts index and totalSiblings to enable/disable reorder buttons
+  const renderTopicItem = (topic: Topic, level: number = 0, index?: number, totalSiblings?: number) => {
+    // Get children for the current topic (already sorted by position from context)
     const children = getChildTopics(topic.id);
     const hasChildren = children.length > 0;
+    // Check if the current topic is expanded
     const isExpanded = expandedTopics.includes(topic.id);
 
+    // Determine if reorder buttons should be enabled
+    // Can only reorder if it's not a root topic (level > 0) and index/total are provided
+    const canMoveUp = level > 0 && index !== undefined && index > 0; // Cannot move up if it's the first item (index 0)
+    const canMoveDown = level > 0 && index !== undefined && totalSiblings !== undefined && index < totalSiblings - 1; // Cannot move down if it's the last item
+
+    // Handler for reorder button clicks (Up/Down)
+    const handleReorderTopicClick = (topicId: string, direction: 'up' | 'down', event: React.MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onRequestReorderTopic(topicId, direction); // Call the new prop function
+    };
+
     return (
+      // Use React.Fragment to avoid adding extra DOM elements per topic row + children group
       <React.Fragment key={topic.id}>
-        <tr className="hover:bg-gray-50">
-          <td className="px-6 py-4 whitespace-nowrap">
+        {/* Table Row for the Topic */}
+        <tr className="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+          {/* Cell for Topic Name and Indentation/Expand Button */}
+          <td className="px-6 py-3 whitespace-nowrap text-sm"> {/* Adjusted py */}
             <div
               className="flex items-center"
-              style={{ paddingLeft: `${level * 1.5}rem` }}
+              style={{ paddingLeft: `${level * 1.5}rem` }} // Apply indentation based on level
             >
+              {/* Expand/Collapse Button (only if topic has children) */}
               {hasChildren && (
                 <button
                   onClick={() => toggleExpand(topic.id)}
-                  className="mr-2 text-gray-500 hover:text-gray-800 focus:outline-none"
+                  className="mr-2 text-gray-500 hover:text-gray-800 focus:outline-none p-1 -ml-1 rounded-full hover:bg-gray-200" // Added padding/rounding for better click target
                   aria-label={isExpanded ? 'Recolher subtópicos' : 'Expandir subtópicos'}
+                  aria-expanded={isExpanded}
                 >
                   {isExpanded ? (
-                    <ChevronDownIcon size={18} />
+                    <ChevronDownIcon size={16} /> // Smaller icon
                   ) : (
-                    <ChevronRightIcon size={18} />
+                    <ChevronRightIcon size={16} /> // Smaller icon
                   )}
                 </button>
               )}
+              {/* Placeholder for alignment when no children but indented */}
               {!hasChildren && level > 0 && (
-                  <span className="inline-block w-[18px] mr-2"></span> // Placeholder for alignment
+                  <span className="inline-block w-[20px] mr-2"></span> // Adjusted width slightly
               )}
-              <Link to={`/admin/topics/${topic.id}`} className="text-blue-900 hover:underline">
+              {/* Link to view/edit the topic */}
+              <Link to={`/admin/topics/${topic.id}`} className="text-blue-800 hover:text-blue-600 hover:underline font-medium">
                 {topic.title}
               </Link>
             </div>
           </td>
-          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <div className="flex justify-end items-center space-x-1 sm:space-x-2">
-              {/* Add the Move Button */}
+
+          {/* Cell for Action Buttons */}
+          <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+            {/* Flex container for action buttons */}
+            <div className="flex justify-end items-center space-x-1"> {/* Reduced space */}
+
+              {/* --- Reorder Buttons (Up/Down) --- */}
+              {/* Render only for non-root topics (level > 0) */}
+              {level > 0 && (
+                <>
+                  {/* Move Up Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleReorderTopicClick(topic.id, 'up', e)}
+                    disabled={!canMoveUp} // Disable if it's the first item
+                    title="Mover para Cima"
+                    className={`p-1 ${!canMoveUp ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded'}`} // Added hover/rounding
+                  >
+                    <ArrowUpIcon size={16} />
+                  </Button>
+
+                  {/* Move Down Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleReorderTopicClick(topic.id, 'down', e)}
+                    disabled={!canMoveDown} // Disable if it's the last item
+                    title="Mover para Baixo"
+                     className={`p-1 ${!canMoveDown ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded'}`} // Added hover/rounding
+                  >
+                    <ArrowDownIcon size={16} />
+                  </Button>
+                 </>
+              )}
+              {/* --- End Reorder Buttons --- */}
+
+
+              {/* Move Topic (Change Parent) Button */}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={(e) => handleMoveTopicClick(topic.id, e)} // Attach handler
-                title="Mover Tópico" // Add tooltip
+                onClick={(e) => handleMoveTopicClick(topic.id, e)}
+                title="Mover Tópico (mudar pai)"
+                className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
               >
                 <ArrowRightLeftIcon size={16} />
               </Button>
+
+              {/* Edit Topic Button (conditional) */}
               {onEditTopic && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onEditTopic(topic.id);
-                  }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditTopic(topic.id); }}
                   title="Editar Tópico"
+                  className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
                 >
                   <EditIcon size={16} />
                 </Button>
               )}
+
+              {/* Delete Topic Button */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={(e) => handleDeleteTopicClick(topic.id, e)}
-                className="text-red-600 hover:text-red-800"
+                className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded" // Added hover/rounding
                 title="Excluir Tópico"
               >
                 <TrashIcon size={16} />
               </Button>
+
+              {/* Add Subtopic Button (conditional) */}
               {onAddTopic && (
                  <Button
                   variant="ghost"
                   size="icon"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onAddTopic(topic.id);
-                  }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddTopic(topic.id); }}
                   title="Adicionar Subtópico"
+                  className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded" // Added hover/rounding
                 >
                   <PlusIcon size={16} />
                 </Button>
@@ -130,50 +214,63 @@ const TopicList: React.FC<TopicListProps> = ({ onAddTopic, onEditTopic, onReques
           </td>
         </tr>
 
+        {/* Recursive Rendering of Children */}
+        {/* Render children only if the topic is expanded and has children */}
         {isExpanded && hasChildren && (
-          children.map(child => renderTopicItem(child, level + 1))
+          // Map through the children (already sorted) and render them recursively
+          // Pass the incremented level, the child's index, and the total number of children
+          children.map((child, idx) => renderTopicItem(child, level + 1, idx, children.length))
         )}
       </React.Fragment>
     );
-  };
+  }; // End of renderTopicItem function
 
+  // --- Component Return (Main Table Structure) ---
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6 flex justify-between items-center border-b border-gray-200">
-        <h3 className="text-lg leading-6 font-medium text-gray-900">
-          Tópicos
+    <div className="bg-white shadow-md overflow-hidden sm:rounded-lg border border-gray-200">
+      {/* Header Section */}
+      <div className="px-4 py-4 sm:px-6 flex justify-between items-center border-b border-gray-200">
+        <h3 className="text-xl leading-6 font-semibold text-gray-900">
+          Gerenciar Tópicos
         </h3>
+        {/* Button to add a root topic (conditional) */}
         {onAddTopic && (
           <Button
-            variant="default"
+            variant="default" // Assuming a default style for primary actions
             size="sm"
-            onClick={() => onAddTopic(null)}
-            icon={<PlusIcon size={16} />}
+            onClick={() => onAddTopic(null)} // Pass null parentId for root topic
+            icon={<PlusIcon size={16} className="mr-1 -ml-0.5" />} // Icon before text
           >
-            Adicionar Tópico Raiz
+            Novo Tópico Raiz
           </Button>
         )}
       </div>
 
+      {/* Table Container */}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
+          {/* Table Head */}
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Nome do Tópico
               </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-auto sm:w-64"> {/* Fixed width for actions on larger screens */}
                 Ações
               </th>
             </tr>
           </thead>
+          {/* Table Body */}
           <tbody className="bg-white divide-y divide-gray-200">
+            {/* Render root topics or a message if none exist */}
             {rootTopics.length > 0 ? (
-              rootTopics.map(topic => renderTopicItem(topic))
+              // Map through root topics and render each item starting at level 0
+              rootTopics.map(topic => renderTopicItem(topic, 0))
             ) : (
+              // Row displayed when there are no topics
               <tr>
-                <td colSpan={2} className="px-6 py-4 text-center text-sm text-gray-500">
-                  Nenhum tópico disponível. Crie o primeiro.
+                <td colSpan={2} className="px-6 py-10 text-center text-sm text-gray-500"> {/* Increased padding */}
+                  Nenhum tópico encontrado. Clique em "Novo Tópico Raiz" para começar.
                 </td>
               </tr>
             )}
