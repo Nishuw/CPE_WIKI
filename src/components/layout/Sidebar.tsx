@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useContent } from '../../context/ContentContext';
 import { Topic } from '../../types';
 import { ChevronDownIcon, ChevronRightIcon, FolderIcon, SearchIcon, XIcon } from 'lucide-react';
@@ -16,6 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   toggleSidebar,
 }) => {
   const { topics, getChildTopics } = useContent();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
   const prevTopicIdRef = React.useRef<string | undefined>(undefined);
@@ -28,6 +29,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     const initialExpandedState: Record<string, boolean> = {};
     rootTopics.forEach((topic) => (initialExpandedState[topic.id] = false));
     setExpandedTopics(initialExpandedState);
+    
+    if (currentTopicId) {
+      const pathSegments = location.pathname.split('/').filter(Boolean);
+      if (pathSegments.length > 1) {
+        const topicId = pathSegments[1];
+        let topic = topics.find(topic => topic.id === topicId)
+        
+          expandParentTopics(topic, topics)
+      }
+    }
   }, [rootTopics]);
 
 
@@ -52,6 +63,24 @@ const Sidebar: React.FC<SidebarProps> = ({
           }));
       }
   };
+  const expandParentTopics = (topic: Topic | undefined, allTopics: Topic[]) => {
+    if (!topic) return;
+    let topicToExpand = topic
+    setExpandedTopics((prev) => {
+      const newState: Record<string, boolean> = { ...prev };
+
+      while (topicToExpand) {
+        newState[topicToExpand.id] = true;
+        
+        if (!topicToExpand.parent) break;
+        
+        topicToExpand = allTopics.find(t => t.id === topicToExpand.parent);
+      }
+      
+      return newState;
+    });
+    
+  };
   const renderTopics = (parentTopics: Topic[], level: number = 0) => {
     const filteredTopics = searchTerm ? filterTopics(parentTopics, searchTerm) : parentTopics;
 
@@ -70,6 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onClick={(e) => {
                   if (hasChildren) {
                     e.preventDefault();
+                    
                     toggleTopic(topic.id);
                   }
                 }}

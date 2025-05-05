@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Topic, Content, User } from '../types'; // Import User type
 import { useAuth } from './AuthContext';
 import { db } from '../firebase'; // Import your firebase db instance
-import { 
+import {
   collection,
   doc,
   addDoc,
@@ -63,7 +63,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setLoadingContents(false);
       setLoadingUsers(false);
       return; 
-    }
+    };
 
     // Topics Listener
     const topicsQuery = query(collection(db, 'topics'));
@@ -140,7 +140,6 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const getUserByUid = useCallback((uid: string): User | undefined => {
     return users.find(user => user.id === uid); // Assuming user doc ID is the Auth UID
   }, [users]); // Depends on the users state
-
 
   const createSlug = (title: string) => {
     return title
@@ -229,10 +228,25 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // --- Local State Getters ---
-  const getTopicById = useCallback((id: string) => { return topics.find(topic => topic.id === id); }, [topics]);
-  const getContentById = useCallback((id: string) => { return contents.find(content => content.id === id); }, [contents]);
-  const getContentsByTopicId = useCallback((topicId: string) => { return contents.filter(content => content.topicId === topicId); }, [contents]);
-  const getChildTopics = useCallback((parentId: string | null) => { return topics.filter(topic => topic.parentId === parentId); }, [topics]);
+  const getTopicById = useCallback((id: string) => {
+    return topics.find(topic => topic.id === id);
+  }, [topics]);
+  useEffect(() => {
+    console.log("ContentContext: All contents:", contents);
+  }, [contents]);
+  const getContentById = useCallback((id: string) => {
+      console.log("ContentContext: getContentById called with id:", id);
+      const content = contents.find((content) => content.id === id);
+      console.log("ContentContext: getContentById returning:", content ? content : "undefined");
+      return content;
+  }, [contents]);
+
+    const getContentsByTopicId = useCallback((topicId: string) => {
+    return contents.filter(content => content.topicId === topicId);
+  }, [contents]);
+    const getChildTopics = useCallback((parentId: string | null) => {
+        return topics.filter(topic => topic.parentId === parentId);
+  }, [topics]);
 
   return (
     <ContentContext.Provider value={{
