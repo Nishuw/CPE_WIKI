@@ -15,7 +15,8 @@ import {
   getDoc,
   setDoc,
   collection,
-  onSnapshot // Import onSnapshot here
+  onSnapshot, // Import onSnapshot here
+  serverTimestamp
 } from 'firebase/firestore';
 import { User as AppUser } from '../types'; // Alias for your App User type
 import { toast } from 'react-hot-toast'; // Assuming toast is used for notifications
