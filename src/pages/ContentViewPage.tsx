@@ -1,65 +1,89 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useContent } from '../context/ContentContext';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import { EditIcon } from 'lucide-react';
 import { Content } from '../types';
 
+
 const ContentViewPage: React.FC = () => {
-  const { getContentById } = useContent();
+  const { getContentsByTopicId, getContentById } = useContent();
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
-  const { topicId, contentId } = useParams<{ topicId?: string; contentId: string }>();
-  const [content, setContent] = useState<Content | null>(null);
+  const { topicId, contentId } = useParams<{ topicId?: string; contentId?: string }>();
+  const [contents, setContents] = useState<Content[]>([]);
 
   useEffect(() => {
-    const fetchContent = async () => {
-      if (contentId) {
-        try {
-          const fetchedContent = await getContentById(contentId);
-          setContent(fetchedContent);
-        } catch (error) {
-          console.error('Error fetching content:', error);
-          setContent(null);
-        }
+    const fetchContents = async () => {
+      if (topicId) {
+        const topicContents = getContentsByTopicId(topicId);
+        setContents(topicContents || []);
       }
     };
-    fetchContent();
-  }, [contentId, getContentById]);
+    fetchContents();
+  }, [topicId, getContentsByTopicId]);
 
-  if (isLoading || !content) {
+  const contentToShow = contentId
+    ? contents.find((c) => c.id === contentId)
+    : null;
+
+  if (isLoading || (contentId && !contentToShow)) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Conteúdo não encontrado ou não existe.</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Não foi possível encontrar o conteúdo.</h2>
       </div>
     );
-    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">       
-        {user?.role === 'admin' && (
+      <div className="mb-6 flex items-center justify-between">
+        {contentToShow && user?.role === 'admin' && (
           <Button
             variant="outline"
-            onClick={() => navigate(`/admin/topics/${topicId}/content/${contentId}/edit`)}
-            onClick={() => navigate(topicId ? `/admin/topics/${topicId}/content/${contentId}/edit` : `/admin/content/${contentId}/edit`)}
+            onClick={() =>
+              navigate(
+                topicId
+                  ? `/admin/topics/${topicId}/content/${contentId}/edit`
+                  : `/admin/content/${contentId}/edit`
+              )
+            }
             icon={<EditIcon size={16} />}
           >
             Editar Conteúdo
           </Button>
         )}
       </div>
-         <div className="bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">{content.title}</h1>
-
-        <div className="text-sm text-gray-500 mb-6">
-          Última atualização: {new Date(content.updatedAt).toLocaleDateString()}
-        </div>
-
-        <div className="prose max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: content.body }} />
-        </div>
-      </div>
+        {!contentToShow && contents.length === 0 && (
+            <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Não há conteúdos neste tópico</h2>
+            </div>
+        )}
+       {contentToShow && (
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{contentToShow.title}</h1>
+          <div className="text-sm text-gray-500 mb-6">
+            Última atualização: {new Date(contentToShow.updatedAt).toLocaleDateString()}
+          </div>
+          <div className="prose max-w-none">
+            <div dangerouslySetInnerHTML={{ __html: contentToShow.body }} />
+          </div>
+        </div>)}
+         {!contentToShow && contents.length > 0 && (
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Conteúdos neste tópico</h2>
+                    <ul className='list-disc list-inside'>
+                    {contents.map(c => (
+                         <li key={c.id}>
+                            <Link to={`/topics/${topicId}/content/${c.id}`}>
+                                {c.title}
+                            </Link>
+                         </li>
+                    ))}
+                </ul>
+                </div>
+            )}
     </div>
   );
 };
