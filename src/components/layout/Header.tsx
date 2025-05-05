@@ -2,20 +2,20 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../ui/Button';
-import { LogOutIcon, MenuIcon } from 'lucide-react';
+import { LogOutIcon, MenuIcon, UserIcon } from 'lucide-react'; // Import UserIcon
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
-  // Get isAdmin state from the context
-  const { isAuthenticated, logout, isAdmin } = useAuth();
+  // Get isAdmin state and appUser from the context
+  const { isAuthenticated, logout, isAdmin, appUser, isLoading } = useAuth(); // Get appUser and isLoading
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    // navigate('/login'); // Redirecionamento pode ser tratado pelo Route protection
   };
 
   return (
@@ -34,13 +34,26 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         </div>
         
         <div className="flex items-center space-x-4">
-          {isAuthenticated ? (
+          {/* Show loading state or user info/login link */}
+          {isLoading ? (
+              <div className="h-6 w-20 bg-blue-800 rounded animate-pulse"></div> // Placeholder loading
+          ) : isAuthenticated ? (
             <div className="flex items-center gap-4">
+              {/* Link to User Profile */}
+              <Link
+                 to="/profile"
+                 className="flex items-center text-sm font-medium text-white hover:text-blue-200 transition-colors"
+              >
+                {/* Display username or default text */}
+                 <UserIcon size={18} className="mr-1"/>
+                {appUser?.username || appUser?.email || 'Meu Perfil'} 
+              </Link>
+
               {/* Conditionally render Admin link based on isAdmin state */}
               {isAdmin && (
                 <Link 
-                  to="/admin" // Link to the admin dashboard route
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-800 rounded-md hover:bg-blue-700 transition-colors"
+                  to="/admin"
+                  className="px-3 py-1 text-sm font-medium text-white bg-blue-800 rounded-md hover:bg-blue-700 transition-colors"
                 >
                   Painel Admin
                 </Link>
@@ -51,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                 onClick={handleLogout}
                 icon={<LogOutIcon size={16} />}
                 className="text-white hover:bg-blue-800"
-              > {/* Fechar Sessão */}
+              >
                 Sair
               </Button>
             </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../ui/Button'; 
 import Input from '../ui/Input';
-import { LockIcon, MailIcon } from 'lucide-react';
+import { LockIcon, MailIcon, UserIcon } from 'lucide-react'; // Import UserIcon
 
 // Define os modos possíveis do formulário
 type FormMode = 'login' | 'signup';
@@ -10,46 +10,48 @@ type FormMode = 'login' | 'signup';
 const AuthForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState(''); // Novo estado para confirmação
-  const [mode, setMode] = useState<FormMode>('login'); // Estado para controlar o modo (login/signup)
-  const { login, signup, isLoading, error: authError } = useAuth(); // Pega signup e renomeia error para evitar conflito
-  const [localError, setLocalError] = useState(''); // Erro local para validações (ex: senhas não conferem)
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState(''); // Novo estado para username
+  const [mode, setMode] = useState<FormMode>('login');
+  // Assumindo que a função signup no useAuth agora aceita username
+  const { login, signup, isLoading, error: authError } = useAuth(); 
+  const [localError, setLocalError] = useState('');
 
   const isLoginMode = mode === 'login';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(''); // Limpa erros locais
+    setLocalError('');
 
-    // Validação específica para o modo de registro
     if (!isLoginMode) {
+      // Validação para o modo de registro (incluindo username)
+      if (!username.trim()) {
+          setLocalError('Por favor, insira um nome de usuário.');
+          return;
+      }
       if (password !== confirmPassword) {
         setLocalError('As senhas não conferem.');
-        return; // Interrompe o envio se as senhas não baterem
+        return;
       }
        if (password.length < 6) {
            setLocalError('A senha deve ter pelo menos 6 caracteres.');
            return;
        }
-      // Chamar a função de registro do contexto
-      await signup(email, password);
+      // Chamar a função de registro do contexto com username
+      await signup(email, password, username.trim()); // Passa username
     } else {
       // Chamar a função de login do contexto
       await login(email, password);
     }
-
-    // O redirecionamento será tratado pelo AuthContext/LoginPage baseado no estado isAuthenticated/isAdmin
-    // Não precisamos mais do navigate aqui.
   };
 
-  // Function to toggle between modes
   const toggleMode = () => {
     setMode(isLoginMode ? 'signup' : 'login');
-    setEmail(''); // Limpa campos ao trocar de modo
+    setEmail('');
     setPassword('');
     setConfirmPassword('');
-    setLocalError(''); // Limpa erros locais ao trocar de modo
-    // Erros do AuthContext são limpos automaticamente nas funções login/signup
+    setUsername(''); // Limpa username ao trocar de modo
+    setLocalError('');
   };
 
   return (
@@ -64,10 +66,26 @@ const AuthForm: React.FC = () => {
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit}>
-        {(authError || localError) && ( // Mostra erro do AuthContext ou erro local
+        {(authError || localError) && (
           <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md border border-red-200" data-testid="auth-error">
             {localError || authError}
           </div>
+        )}
+
+        {/* Campo de Username - Apenas no modo Signup */}
+        {!isLoginMode && (
+             <Input
+                id="username"
+                label="Nome de Usuário"
+                type="text"
+                required
+                autoComplete="username"
+                placeholder="Seu nome para exibir"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="pl-10"
+                icon={<UserIcon className="w-5 h-5 text-gray-400" />} // Use UserIcon
+             />
         )}
 
         <Input
@@ -117,17 +135,16 @@ const AuthForm: React.FC = () => {
           variant="primary"
           size="lg"
           isLoading={isLoading}
-          className="w-full !mt-8" // Adiciona !mt-8 para garantir margem superior
+          className="w-full !mt-8"
           disabled={isLoading}
         >
           {isLoading ? (isLoginMode ? 'Entrando...' : 'Cadastrando...') : (isLoginMode ? 'Entrar' : 'Cadastrar')}
         </Button>
 
-         {/* Link para alternar entre modos */}
          <p className="text-sm text-center text-gray-600 !mt-6" data-testid="toggle-mode-text">
            {isLoginMode ? 'Não tem uma conta?' : 'Já tem uma conta?'}
            <button
-             type="button" // Importante para não submeter o form
+             type="button"
              onClick={toggleMode}
              className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded"
              disabled={isLoading}
@@ -141,4 +158,4 @@ const AuthForm: React.FC = () => {
   );
 };
 
-export default AuthForm; // Renomeado para AuthForm, pois agora lida com ambos
+export default AuthForm;

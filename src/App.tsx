@@ -9,6 +9,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import TopicPage from './pages/TopicPage';
 import ContentViewPage from './pages/ContentViewPage';
+import UserProfilePage from './pages/UserProfilePage'; // Import UserProfilePage
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -23,29 +24,43 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+    return <div className="flex items-center justify-center min-h-screen text-gray-600">Carregando...</div>;
   }
 
   if (!isAuthenticated) {
+    // console.log("ProtectedRoute: Not authenticated, navigating to login");
     return <Navigate to="/login" replace />;
   }
 
+  // console.log("ProtectedRoute: Authenticated");
   return <>{children}</>;
 };
 
-// Admin Route Component
+// Admin Route Component - Still renders Layout and Outlet internally
 const AdminRoute: React.FC = () => {
-  const { isAdmin, isLoading } = useAuth();
+  const { isAdmin, isLoading, isAuthenticated } = useAuth(); // Get isAuthenticated here too
 
+   // Admin check should happen AFTER authentication is confirmed
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+    return <div className="flex items-center justify-center min-h-screen text-gray-600">Carregando permissões...</div>;
+  }
+
+  // If not authenticated at this point, ProtectedRoute should have already redirected. 
+  // But as a fallback or for clarity:
+  if (!isAuthenticated) {
+       // This case should ideally not be hit if AdminRoute is nested within ProtectedRoute
+       // console.warn("AdminRoute: Not authenticated, unexpected state.");
+       return <Navigate to="/login" replace />;
   }
 
   if (!isAdmin) {
+    // console.log("AdminRoute: Not admin, navigating to home");
     return <Navigate to="/" replace />;
   }
 
+  // console.log("AdminRoute: Is admin");
   return (
+     // Admin content is wrapped in Layout
     <Layout>
         <Outlet />
     </Layout>
@@ -53,8 +68,6 @@ const AdminRoute: React.FC = () => {
 };
 
 function App() {
-  // Removed isAuthenticated, isLoading from App component scope as they are used within Protected/Admin routes
-
   return (
     <AuthProvider>
       <ContentProvider>
@@ -63,12 +76,24 @@ function App() {
             {/* Public Route (Login) */}
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Protected Routes - Reverted to using ProtectedRoute as the element */}
+            {/* Protected Route for User Profile */}
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <UserProfilePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Protected Routes (using Layout) */}
+             {/* The root path and other main app routes that use the sidebar/header/layout */}
             <Route
               path="/"
-              element={ // Protect the main application routes
+              element={ // Protect these routes and apply the Layout
                 <ProtectedRoute>
-                  <Layout /> {/* Layout for protected content */}
+                   {/* Render Layout directly here if its children should be the nested routes */}
+                  <Layout /> 
                 </ProtectedRoute>
               }
             >
@@ -78,12 +103,12 @@ function App() {
               <Route path="topics/:topicId/content/:contentId" element={<ContentViewPage />} />
             </Route>
 
-            {/* Admin Routes - Protected and Admin-specific */}
+            {/* Admin Routes (Protected and Admin-specific, using Layout via AdminRoute) */}
             <Route
               path="/admin"
               element={ // Protect the entire admin section
-                <ProtectedRoute> {/* Ensures authentication */}
-                  <AdminRoute /> {/* Ensures admin role and renders nested routes */}
+                <ProtectedRoute> {/* Ensures authentication first */}
+                  <AdminRoute /> {/* Ensures admin role and renders nested routes within its Layout */}
                 </ProtectedRoute>
               }
             >

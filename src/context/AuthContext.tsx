@@ -1,17 +1,38 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore'; // setDoc removido, pois a Cloud Function cuidará disso
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  User as FirebaseAuthUser, // Alias for Firebase Auth User type
+  updateProfile, // Import updateProfile
+  updateEmail, // Import updateEmail
+  updatePassword // Import updatePassword
+} from 'firebase/auth';
+import { 
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  onSnapshot // Import onSnapshot here
+} from 'firebase/firestore';
+import { User as AppUser } from '../types'; // Alias for your App User type
+import { toast } from 'react-hot-toast'; // Assuming toast is used for notifications
 
 interface AuthContextType {
-  user: User | null;
+  user: FirebaseAuthUser | null; // Firebase Auth User
+  appUser: AppUser | null; // Your App User from Firestore
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>; // Renomeado de createUser
+  signup: (email: string, password: string, username: string) => Promise<void>; // Updated signup
   logout: () => Promise<void>;
   isAdmin: boolean;
+  updateUsername: (newUsername: string) => Promise<void>; // Add updateUsername
+  updateUserEmail: (newEmail: string) => Promise<void>; // Add updateUserEmail
+  updateUserPassword: (newPassword: string) => Promise<void>; // Add updateUserPassword
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,170 +46,274 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseAuthUser | null>(null); // Firebase Auth User
+  const [appUser, setAppUser] = useState<AppUser | null>(null); // App User from Firestore
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  // Função para verificar o status de administrador (via claim ou doc)
-  const checkAdminStatus = async (currentUser: User) => {
-    // Não seta isLoading true aqui, pois onAuthStateChanged já o faz globalmente
-    try {
-      const idTokenResult = await currentUser.getIdTokenResult(true); // Força atualização do token
-      const claims = idTokenResult.claims;
-
-      if (claims && claims.admin === true) {
-        setIsAdmin(true);
-        console.log("Usuário é administrador via custom claim.");
-        // setIsLoading(false); // Deixa onAuthStateChanged controlar o loading final
-        return; // Já sabemos que é admin, não precisa checar Firestore
-      }
-
-      // Se não for admin via claim, verifica Firestore (opcional, para flags manuais)
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists() && userDoc.data()?.isAdmin === true) {
-          setIsAdmin(true);
-          console.log("Usuário é administrador via Firestore (isAdmin: true).");
+  // --- Firestore Listener for App User Data ---
+  useEffect(() => {
+      let unsubscribe: () => void;
+      if (user) {
+          // Listen to the specific user document in Firestore
+          const userDocRef = doc(db, 'users', user.uid);
+          unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+              if (docSnapshot.exists()) {
+                  const userData = docSnapshot.data() as AppUser;
+                  setAppUser({ id: docSnapshot.id, ...userData }); // Store AppUser including ID
+                  setIsAdmin(userData.role === 'admin'); // Determine admin status from role
+                  console.log("AppUser data updated from Firestore:", userData);
+              } else {
+                  // Document doesn't exist, maybe user was deleted from Firestore?
+                  setAppUser(null);
+                  setIsAdmin(false);
+                  console.warn("Firestore document for user", user.uid, "not found.");
+                  // Optionally handle this case, e.g., log the user out or show an error
+              }
+          }, (err) => {
+              console.error("Error listening to user document:", err);
+              setError('Falha ao carregar dados do usuário.');
+              setAppUser(null);
+              setIsAdmin(false);
+          });
       } else {
+          // No Firebase Auth user, clear AppUser state
+          setAppUser(null);
           setIsAdmin(false);
-          console.log("Usuário não é administrador (sem claim ou flag isAdmin no Firestore).");
       }
-    } catch (error) {
-      console.error("Erro ao verificar status de administrador:", error);
-      setIsAdmin(false); // Assume não admin em caso de erro
-    } finally {
-       // Não seta isLoading false aqui, deixa para o onAuthStateChanged
-    }
-  };
 
+      // Cleanup listener
+      return () => {
+          if (unsubscribe) unsubscribe();
+      };
+
+  }, [user]); // Re-run when Firebase Auth user changes
+
+  // --- Authentication State Listener ---
+  useEffect(() => {
+    setIsLoading(true); 
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log("Auth state changed. UID:", currentUser?.uid || 'Nenhum');
+      if (currentUser) {
+        setUser(currentUser); // Set Firebase Auth user
+        setIsAuthenticated(true);
+        // AppUser data and isAdmin status will be set by the Firestore listener now
+      } else {
+        // User logged out
+        setUser(null);
+        setIsAuthenticated(false);
+        // AppUser and isAdmin will be cleared by the Firestore listener's effect
+      }
+       setIsLoading(false); // Finalize loading once Auth state is determined
+    });
+
+    return () => {
+        console.log("Unsubscribing from onAuthStateChanged");
+        unsubscribe();
+    };
+  }, []); // Roda apenas uma vez na montagem
+
+
+  // --- Authentication Operations ---
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true); // Inicia loading para a operação de login
+    setIsLoading(true); 
     setError(null);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Sucesso! onAuthStateChanged será chamado e cuidará de atualizar o estado
-      console.log("Login iniciado com sucesso para:", userCredential.user.email);
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged listener handles state update on success
     } catch (err: any) {
       console.error("Erro de login:", err);
-      setError(getAuthErrorMessage(err)); // Define a mensagem de erro
-      // Limpa estado localmente em caso de falha imediata
-      setUser(null);
-      setIsAuthenticated(false);
-      setIsAdmin(false);
-      setIsLoading(false); // <<< IMPORTANTE: Finaliza o loading em caso de erro no login
-    } finally {
-      // Não é mais necessário o finally aqui, pois o catch já lida com o erro
-      // Em caso de sucesso, onAuthStateChanged/checkAdminStatus controlarão o loading
+      setError(getAuthErrorMessage(err)); 
+      setIsLoading(false); // Stop loading on failure
     }
   };
 
-  const signup = async (email: string, password: string) => {
-    setIsLoading(true); // Inicia loading para a operação de signup
+  // Updated signup function to create user in Auth and Firestore doc
+  const signup = async (email: string, password: string, username: string) => {
+    setIsLoading(true);
     setError(null);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Sucesso! onAuthStateChanged será acionado.
-      console.log("Registro iniciado com sucesso para:", userCredential.user.email);
+      const firebaseUser = userCredential.user;
+
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', firebaseUser.uid), {
+        email: firebaseUser.email, // Store email in Firestore doc
+        username: username.trim(), // Store the provided username
+        role: 'user', // Default role is user
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      // Optional: Update display name in Firebase Auth (less critical than Firestore doc)
+      // await updateProfile(firebaseUser, { displayName: username.trim() });
+
+      // onAuthStateChanged listener handles further state update
+      console.log("Usuário registrado e documento no Firestore criado para:", firebaseUser.email);
     } catch (err: any) {
       console.error("Erro de registro:", err);
-      setError(getAuthErrorMessage(err)); // Define a mensagem de erro
-      // Limpa estado localmente em caso de falha imediata
-      setUser(null);
-      setIsAuthenticated(false);
-      setIsAdmin(false);
-      setIsLoading(false); // <<< IMPORTANTE: Finaliza o loading em caso de erro no signup
-    } finally {
-      // Não é mais necessário o finally aqui, pois o catch já lida com o erro
-      // Em caso de sucesso, onAuthStateChanged/checkAdminStatus controlarão o loading
+      setError(getAuthErrorMessage(err));
+      setIsLoading(false); // Stop loading on failure
+       // Consider cleaning up the Auth user if Firestore doc creation fails?
     }
   };
 
 
   const logout = async () => {
-    setIsLoading(true); // Indica loading durante o logout
+    setIsLoading(true); 
     setError(null);
     try {
       await signOut(auth);
-      // Sucesso! onAuthStateChanged será acionado com null.
-      console.log("Logout realizado.");
-      // Limpeza de estado agora é feita principalmente pelo onAuthStateChanged
+      // onAuthStateChanged listener handles state update (clearing user, appUser, isAdmin)
+       console.log("Logout realizado.");
     } catch (err: any) {
       console.error("Erro no logout:", err);
       setError(getAuthErrorMessage(err));
-      setIsLoading(false); // Finaliza loading se houve erro no logout
-    } finally {
-      // Estado será limpo pelo onAuthStateChanged (user=null)
-      // Mas podemos garantir aqui também, especialmente se onAuthStateChanged demorar
-       setUser(null);
-       setIsAuthenticated(false);
-       setIsAdmin(false);
-       // O loading será finalizado pelo onAuthStateChanged ao detectar user null
+      setIsLoading(false); // Finalize loading if error
     }
   };
 
+  // --- User Profile Update Operations ---
 
-  useEffect(() => {
-    setIsLoading(true); // Inicia carregando na montagem
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log("Auth state changed. User:", currentUser?.email || 'Nenhum');
-      if (currentUser) {
-        // Usuário está logado ou acabou de logar/registrar
-        setUser(currentUser);
-        setIsAuthenticated(true);
-        await checkAdminStatus(currentUser); // Verifica se é admin (e atualiza isAdmin)
-        setIsLoading(false); // <<< Finaliza o loading APÓS verificar admin
-      } else {
-        // Usuário deslogado ou não autenticado inicialmente
-        setUser(null);
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-        setIsLoading(false); // <<< Finaliza o loading se não há usuário
+  const updateUsername = async (newUsername: string) => {
+      if (!user || !appUser) { 
+          toast.error('Usuário não autenticado.');
+          return;
       }
-    });
-    // Cleanup subscription on unmount
-    return () => {
-        console.log("Unsubscribing from onAuthStateChanged");
-        unsubscribe();
-    };
-  }, []); // Roda apenas uma vez
+      if (newUsername.trim() === appUser.username) { // Avoid unnecessary updates
+           toast.info('Nome de usuário não alterado.');
+           return Promise.resolve(); // Resolve immediately
+      }
 
-  // Função auxiliar para mensagens de erro mais amigáveis
+      try {
+          const userDocRef = doc(db, 'users', user.uid);
+          await updateDoc(userDocRef, {
+              username: newUsername.trim(),
+              updatedAt: serverTimestamp(),
+          });
+          // Firestore listener will update the appUser state
+          toast.success('Nome de usuário atualizado!');
+          console.log("Username updated in Firestore for", user.uid);
+      } catch (err: any) {
+          console.error("Error updating username:", err);
+          toast.error('Falha ao atualizar nome de usuário.');
+          throw err; // Re-throw for component to handle if needed
+      }
+  };
+
+  const updateUserEmail = async (newEmail: string) => {
+       if (!user || !appUser) { 
+           toast.error('Usuário não autenticado.');
+           return;
+       }
+       if (newEmail.trim() === appUser.email) { // Avoid unnecessary updates
+            toast.info('Email não alterado.');
+            return Promise.resolve(); // Resolve immediately
+       }
+
+      try {
+          // Update in Firebase Authentication
+          await updateEmail(user, newEmail.trim());
+          
+          // Update in Firestore document as well (optional but good for consistency)
+          const userDocRef = doc(db, 'users', user.uid);
+           await updateDoc(userDocRef, {
+              email: newEmail.trim(),
+               updatedAt: serverTimestamp(),
+          });
+
+          // Auth state listener might update user.email, Firestore listener updates appUser.email
+          toast.success('Email atualizado!');
+          console.log("Email updated in Auth and Firestore for", user.uid);
+      } catch (err: any) {
+          console.error("Error updating email:", err);
+           // Handle specific auth errors like auth/requires-recent-login
+           if (err.code === 'auth/requires-recent-login') {
+               toast.error('Por favor, faça login novamente para atualizar seu email.');
+               setError('Para atualizar seu email, faça login novamente.');
+           } else if (err.code === 'auth/invalid-email') {
+               toast.error('Formato de email inválido.');
+                setError('Formato de email inválido.');
+           }
+           else {
+             toast.error('Falha ao atualizar email.');
+             setError('Falha ao atualizar email.');
+           }
+          throw err; // Re-throw
+      }
+  };
+
+   const updateUserPassword = async (newPassword: string) => {
+       if (!user) { 
+           toast.error('Usuário não autenticado.');
+           return;
+       }
+       if (newPassword.length < 6) {
+            toast.error('A senha deve ter pelo menos 6 caracteres.');
+             setError('A senha deve ter pelo menos 6 caracteres.');
+            return Promise.reject(new Error('Senha muito curta')); // Reject with an error
+       }
+
+      try {
+          // Update in Firebase Authentication
+          await updatePassword(user, newPassword);
+
+           // Optionally update a timestamp in Firestore to mark profile update time
+           const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, {
+               updatedAt: serverTimestamp(), // Mark profile update time
+           });
+
+          toast.success('Senha atualizada!');
+          console.log("Password updated for", user.uid);
+      } catch (err: any) {
+          console.error("Error updating password:", err);
+           // Handle specific auth errors like auth/requires-recent-login
+           if (err.code === 'auth/requires-recent-login') {
+               toast.error('Por favor, faça login novamente para atualizar sua senha.');
+               setError('Para atualizar sua senha, faça login novamente.');
+           } else {
+             toast.error('Falha ao atualizar senha.');
+              setError('Falha ao atualizar senha.');
+           }
+          throw err; // Re-throw
+      }
+   };
+
+
+  // Helper for auth error messages
   const getAuthErrorMessage = (error: any): string => {
     switch (error.code) {
-      case 'auth/invalid-email':
-        return 'Formato de email inválido.';
-      case 'auth/user-disabled':
-        return 'Este usuário foi desabilitado.';
+      case 'auth/invalid-email': return 'Formato de email inválido.';
+      case 'auth/user-disabled': return 'Este usuário foi desabilitado.';
       case 'auth/user-not-found':
       case 'auth/wrong-password':
-      case 'auth/invalid-credential': // Novo código de erro para credenciais inválidas
-        return 'Email ou senha incorretos.';
-      case 'auth/email-already-in-use':
-        return 'Este email já está sendo usado por outra conta.';
-      case 'auth/weak-password':
-        return 'A senha é muito fraca. Use pelo menos 6 caracteres.';
-      case 'auth/operation-not-allowed':
-        return 'Login com email/senha não está habilitado.';
-      default:
-        return error.message || 'Ocorreu um erro inesperado.';
+      case 'auth/invalid-credential': return 'Email ou senha incorretos.';
+      case 'auth/email-already-in-use': return 'Este email já está sendo usado por outra conta.';
+      case 'auth/weak-password': return 'A senha é muito fraca. Use pelo menos 6 caracteres.';
+      case 'auth/operation-not-allowed': return 'Login com email/senha não está habilitado.';
+      case 'auth/requires-recent-login': return 'Para completar esta ação, faça login novamente.';
+      default: return error.message || 'Ocorreu um erro inesperado.';
     }
   };
 
   const value: AuthContextType = {
-    user,
+    user, // Firebase Auth user object
+    appUser, // AppUser from Firestore
     isAuthenticated,
     isLoading,
     error,
     login,
-    signup, // Exporta a função de registro
+    signup,
     logout,
     isAdmin,
+    updateUsername, // Expose updateUsername
+    updateUserEmail, // Expose updateUserEmail
+    updateUserPassword, // Expose updateUserPassword
   };
-
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
