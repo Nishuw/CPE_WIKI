@@ -16,13 +16,17 @@ import {
   ArrowDownIcon   // <-- Add ArrowDownIcon
 } from 'lucide-react';
 
+// Import date-fns for date formatting
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale'; // Import locale for Brazilian Portuguese
+
 // Define the props for the TopicList component
 interface TopicListProps {
   onAddTopic?: (parentId: string | null) => void; // Optional: Function to trigger adding a topic
   onEditTopic?: (topicId: string) => void; // Optional: Function to trigger editing a topic
   onRequestDeleteTopic: (topicId: string) => void; // Required: Function to request topic deletion
   onRequestMoveTopic: (topicId: string) => void; // Required: Function to request moving topic (to different parent)
-  onRequestReorderTopic: (topicId: string, direction: 'up' | 'down') => void; // <-- New Prop for reordering
+  onRequestReorderTopic: (topicId: string, direction: 'up' | 'down') => Promise<void>; // <-- New Prop for reordering
 }
 
 const TopicList: React.FC<TopicListProps> = ({
@@ -30,15 +34,15 @@ const TopicList: React.FC<TopicListProps> = ({
   onEditTopic,
   onRequestDeleteTopic,
   onRequestMoveTopic,
-  onRequestReorderTopic // <-- Receive the new prop
+  onRequestReorderTopic
 }) => {
   // Get data and functions from the content context
-  const { topics, getChildTopics } = useContent();
+  const { topics, getChildTopics, getUserByUid } = useContent(); // <-- Added getUserByUid
   // State to keep track of which topics are expanded to show children
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
 
   // Show loading indicator if topics or the getter function aren't ready yet
-  if (!topics || !getChildTopics) {
+  if (!topics || !getChildTopics || !getUserByUid) { // <-- Check for getUserByUid too
     return <div>Carregando tópicos...</div>;
   }
 
@@ -86,8 +90,15 @@ const TopicList: React.FC<TopicListProps> = ({
     const handleReorderTopicClick = (topicId: string, direction: 'up' | 'down', event: React.MouseEvent) => {
         event.preventDefault();
         event.stopPropagation();
-        onRequestReorderTopic(topicId, direction); // Call the new prop function
+        onRequestReorderTopic(topicId, direction);
     };
+
+    // Get the user who last updated the topic
+    const updatedByUser = topic.updatedBy ? getUserByUid(topic.updatedBy) : undefined;
+
+    // Format the last updated date
+    const formattedUpdatedAt = topic.updatedAt && topic.updatedAt.toDate ?
+      format(topic.updatedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : 'N/A'; // Using date-fns
 
     return (
       // Use React.Fragment to avoid adding extra DOM elements per topic row + children group
@@ -126,8 +137,22 @@ const TopicList: React.FC<TopicListProps> = ({
             </div>
           </td>
 
+          {/* Cell for Last Updated Info */}
+          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">
+            {topic.updatedAt ? (
+              <span className="block text-gray-600">{formattedUpdatedAt}</span>
+            ) : (
+              <span className="block text-gray-500">N/A</span>
+            )}
+            {updatedByUser ? (
+              <span className="block text-gray-500 text-xs">por {updatedByUser.username}</span>
+            ) : topic.createdBy ? (
+               <span className="block text-gray-500 text-xs">por {getUserByUid(topic.createdBy)?.username || 'Usuário Desconhecido'} (Criador)</span>
+            ) : null}
+          </td>
+
           {/* Cell for Action Buttons */}
-          <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+          <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium w-auto sm:w-64"> {/* Fixed width for actions on larger screens */}
             {/* Flex container for action buttons */}
             <div className="flex justify-end items-center space-x-1"> {/* Reduced space */}
 
@@ -142,7 +167,7 @@ const TopicList: React.FC<TopicListProps> = ({
                     onClick={(e) => handleReorderTopicClick(topic.id, 'up', e)}
                     disabled={!canMoveUp} // Disable if it's the first item
                     title="Mover para Cima"
-                    className={`p-1 ${!canMoveUp ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded'}`} // Added hover/rounding
+                    className={`p-1 ${!canMoveUp ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded'}`}
                   >
                     <ArrowUpIcon size={16} />
                   </Button>
@@ -154,7 +179,7 @@ const TopicList: React.FC<TopicListProps> = ({
                     onClick={(e) => handleReorderTopicClick(topic.id, 'down', e)}
                     disabled={!canMoveDown} // Disable if it's the last item
                     title="Mover para Baixo"
-                     className={`p-1 ${!canMoveDown ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded'}`} // Added hover/rounding
+                     className={`p-1 ${!canMoveDown ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded'}`}
                   >
                     <ArrowDownIcon size={16} />
                   </Button>
@@ -255,6 +280,10 @@ const TopicList: React.FC<TopicListProps> = ({
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Nome do Tópico
               </th>
+              {/* New Header for Last Updated */}
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Última Atualização
+              </th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-auto sm:w-64"> {/* Fixed width for actions on larger screens */}
                 Ações
               </th>
@@ -265,11 +294,11 @@ const TopicList: React.FC<TopicListProps> = ({
             {/* Render root topics or a message if none exist */}
             {rootTopics.length > 0 ? (
               // Map through root topics and render each item starting at level 0
-              rootTopics.map(topic => renderTopicItem(topic, 0))
+              rootTopics.map((topic, index) => renderTopicItem(topic, 0, index, rootTopics.length))
             ) : (
               // Row displayed when there are no topics
               <tr>
-                <td colSpan={2} className="px-6 py-10 text-center text-sm text-gray-500"> {/* Increased padding */}
+                <td colSpan={3} className="px-6 py-10 text-center text-sm text-gray-500"> {/* Increased padding and colspan */}
                   Nenhum tópico encontrado. Clique em "Novo Tópico Raiz" para começar.
                 </td>
               </tr>

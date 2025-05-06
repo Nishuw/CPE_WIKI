@@ -156,6 +156,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       position: initialPosition, // Salva a posição inicial
       createdBy: user.uid,
       createdAt: serverTimestamp(),
+      // Adicionando updatedBy e updatedAt ao criar o tópico
+      updatedBy: user.uid, // O criador é o primeiro a "atualizar" (ao criar)
       updatedAt: serverTimestamp(),
     });
   };
@@ -166,7 +168,9 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await updateDoc(topicRef, {
       title,
       slug: createSlug(title),
-      updatedAt: serverTimestamp(),
+      // Adicionando updatedBy e atualizando updatedAt
+      updatedBy: user.uid, // Define o UID do usuário logado como o último a atualizar
+      updatedAt: serverTimestamp(), // Atualiza o timestamp do servidor
     });
   };
 
@@ -186,6 +190,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       parentId: newParentId,
       position: newPosition,
       updatedAt: serverTimestamp(),
+      // Adicionar updatedBy aqui também, pois mover é uma forma de atualização
+      updatedBy: user.uid,
     });
   };
 
@@ -232,9 +238,9 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     batch.update(topicToMoveRef, { position: swapWithTopic.position });
     batch.update(swapWithTopicRef, { position: topicToMove.position });
 
-    // Atualiza timestamps (opcional, mas bom para rastreamento)
-    batch.update(topicToMoveRef, { updatedAt: serverTimestamp() });
-    batch.update(swapWithTopicRef, { updatedAt: serverTimestamp() });
+    // Atualiza timestamps e updatedBy para ambos os tópicos afetados
+    batch.update(topicToMoveRef, { updatedAt: serverTimestamp(), updatedBy: user.uid });
+    batch.update(swapWithTopicRef, { updatedAt: serverTimestamp(), updatedBy: user.uid });
 
     // Executa o batch
     try {
@@ -270,8 +276,9 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       title,
       body,
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(), // Adicionado aqui também para consistência
       createdBy: user.uid,
+      updatedBy: user.uid, // Adicionado aqui também
     });
   };
 
@@ -281,7 +288,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await updateDoc(doc(db, 'contents', id), {
       title,
       body,
-      updatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(), // Já estava aqui, mantido
+      updatedBy: user.uid, // Adicionado aqui para registrar quem atualizou
     });
   };
 

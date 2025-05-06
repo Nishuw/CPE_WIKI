@@ -8,12 +8,13 @@ export interface User {
 export interface Topic {
   id: string;
   title: string;
-  slug: string; // Mantive o slug que não estava no meu exemplo anterior
-  parent: string | null; // Corrigi para 'parent' como no seu código anterior
-  createdAt: string;
-  updatedAt: string;
+  slug: string;
+  parentId: string | null; // Corrigi para 'parentId' conforme o código do ContentContext
+  createdAt: any; // Usando 'any' para timestamps do Firebase
+  updatedAt: any; // Adicionado: Timestamp da última atualização
   createdBy: string;
-  position: number; // <-- Linha adicionada
+  updatedBy: string; // Adicionado: UID do último usuário que atualizou
+  position: number;
 }
 
 export interface Content {
@@ -21,7 +22,8 @@ export interface Content {
   topicId: string;
   title: string;
   body: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: any; // Usando 'any' para timestamps do Firebase
+  updatedAt: any; // Adicionado aqui também para consistência
   createdBy: string;
+  updatedBy: string; // Adicionado aqui também
 }
