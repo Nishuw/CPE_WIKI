@@ -1,13 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useContent } from '../../context/ContentContext';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import { SaveIcon } from 'lucide-react';
+import { SaveIcon, Upload, Image as ImageIcon, X } from 'lucide-react';
 
 interface ContentEditorProps {
   contentId?: string;
   topicId: string;
   onSuccess?: () => void;
+}
+
+interface UploadedImage {
+  id: string;
+  url: string;
+  file: File;
 }
 
 const ContentEditor: React.FC<ContentEditorProps> = ({
@@ -18,6 +24,11 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
   const [title, setTitle] = useState("");
   const [body, setBody] = useState('');
   const [error, setError] = useState('');
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const { 
     addContent, 
     updateContent, 
@@ -35,6 +46,134 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       }
     }
   }, [contentId, getContentById]);
+
+  // Handler para colar imagens da área de transferência
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (!textareaRef.current || !e.clipboardData) return;
+      
+      const items = e.clipboardData.items;
+      
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault(); // Previne o comportamento padrão de colar
+          
+          const file = items[i].getAsFile();
+          if (file) {
+            await handleImageUpload(file);
+          }
+        }
+      }
+    };
+
+    // Adiciona evento de paste ao documento
+    document.addEventListener('paste', handlePaste);
+    
+    // Limpa o evento ao desmontar o componente
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
+  // Função para lidar com o upload da imagem
+  const handleImageUpload = async (file: File) => {
+    try {
+      setIsUploading(true);
+      
+      // Simular o upload para um serviço (em produção, substituir por um upload real)
+      // Por enquanto, apenas criamos uma URL local para o arquivo
+      const imageUrl = URL.createObjectURL(file);
+      const imageId = `img-${Date.now()}`;
+      
+      const newImage = {
+        id: imageId,
+        url: imageUrl,
+        file: file
+      };
+      
+      setUploadedImages(prev => [...prev, newImage]);
+      
+      // Se o textarea estiver focado, insere a imagem na posição do cursor
+      if (document.activeElement === textareaRef.current) {
+        insertImageAtCursor(imageId, imageUrl);
+      }
+      
+      setIsUploading(false);
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      setError('Falha ao fazer upload da imagem');
+      setIsUploading(false);
+    }
+  };
+
+  // Função para inserir a imagem no texto na posição do cursor
+  const insertImageAtCursor = (imageId: string, imageUrl: string) => {
+    if (!textareaRef.current) return;
+    
+    const textarea = textareaRef.current;
+    const cursorPos = textarea.selectionStart;
+    const textBefore = body.substring(0, cursorPos);
+    const textAfter = body.substring(cursorPos);
+    
+    // Cria tag de imagem com o ID para referência
+    const imgTag = `<img src="${imageUrl}" alt="Imagem carregada" data-img-id="${imageId}" />`;
+    
+    setBody(textBefore + imgTag + textAfter);
+    
+    // Reposiciona o cursor após a imagem inserida
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPosition = cursorPos + imgTag.length;
+      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+    }, 0);
+  };
+
+  // Função para inserir uma imagem da galeria no ponto de seleção atual
+  const insertGalleryImage = (imageId: string, imageUrl: string) => {
+    if (!textareaRef.current) return;
+    
+    const textarea = textareaRef.current;
+    textarea.focus();
+    
+    // Insere a imagem no ponto atual do cursor
+    insertImageAtCursor(imageId, imageUrl);
+  };
+
+  // Função para remover uma imagem da galeria
+  const removeImage = (imageId: string) => {
+    // Remove da lista de imagens
+    setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+    
+    // Remove todas as referências da imagem no conteúdo
+    const updatedBody = body.replace(
+      new RegExp(`<img[^>]*data-img-id="${imageId}"[^>]*>`, 'g'), 
+      ''
+    );
+    
+    setBody(updatedBody);
+  };
+
+  // Função para acionar o input de arquivo
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Função para processar o upload de arquivos selecionado
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    for (let i = 0; i < files.length; i++) {
+      await handleImageUpload(files[i]);
+    }
+    
+    // Limpa o input para permitir o upload do mesmo arquivo novamente
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Função para processar quebras de linha no texto para HTML
   const processLineBreaks = (text: string): string => {
@@ -59,7 +198,6 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       return `<p>${processLineBreaks(htmlText)}</p>`;
     } else {
       // Texto com HTML: precisamos preservar as tags e ainda assim manter as quebras de linha
-      // Esta abordagem simplificada substitui quebras de linha por <br /> fora das tags
       const segments = htmlText.split('\n');
       let result = '';
       let insideTag = false;
@@ -87,7 +225,17 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Processa todos os URLs de imagem antes de salvar
+  const processImageUrls = async (contentHtml: string): Promise<string> => {
+    // Em um sistema real, você precisaria fazer upload de todas as imagens para o servidor
+    // e substituir os URLs temporários por URLs permanentes
+    
+    // Por enquanto, esta função apenas retorna o HTML como está
+    // Em produção, você precisaria implementar o upload real das imagens
+    return contentHtml;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -100,10 +248,13 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       // Processar o conteúdo para preservar quebras de linha, mesmo com tags HTML
       const processedBody = preserveLineBreaks(body);
       
+      // Processamento das imagens (upload e substituição de URLs)
+      const finalContent = await processImageUrls(processedBody);
+      
       if (isEditing && contentId) {
-        updateContent(contentId, title, processedBody);
+        updateContent(contentId, title, finalContent);
       } else {
-        addContent(topicId, title, processedBody);
+        addContent(topicId, title, finalContent);
       }
       
       if (onSuccess) {
@@ -143,11 +294,11 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 
       <div className="mb-4">
         <label htmlFor="content-body" className="block text-sm font-medium text-gray-700 mb-1">
-          Content
+          Conteúdo
         </label>
         <div className="border border-gray-300 rounded-md">
-          {/* Simple text editor toolbar */}
-          <div className="bg-gray-50 border-b border-gray-300 p-2 flex space-x-2">
+          {/* Text editor toolbar */}
+          <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-2">
             <button 
               type="button"
               className="p-1 rounded hover:bg-gray-200"
@@ -186,29 +337,88 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
             <button 
               type="button" 
               className="p-1 rounded hover:bg-gray-200"
-              onClick={() => setBody(body + '<img src="https://images.pexels.com/photos/1591447/pexels-photo-1591447.jpeg" alt="Example image" />')}
+              onClick={triggerFileInput}
             >
-              Imagem
+              <ImageIcon size={16} className="inline mr-1" />
+              Carregar Imagem
             </button>
-            <p className="text-xs text-gray-500 ml-2 flex items-center">
-              Dica: Pressione Enter para criar novas linhas no texto
-            </p>
+            
+            {/* Input de arquivo oculto */}
+            <input 
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileInputChange}
+              accept="image/*"
+              multiple
+              className="hidden"
+            />
           </div>
 
           {/* Content textarea */}
           <textarea
             id="content-body"
+            ref={textareaRef}
             className="w-full px-3 py-2 border-0 focus:ring-0 focus:outline-none"
             rows={10}
             value={body}
             onChange={(e) => setBody(e.target.value)}            
-            placeholder="Insira o conteúdo. Pressione Enter para novas linhas. Você pode combinar HTML com quebras de linha."
+            placeholder="Insira o conteúdo. Pressione Enter para novas linhas. Cole imagens com Ctrl+V ou use o botão 'Carregar Imagem'."
           />
         </div>
-        <p className="mt-1 text-xs text-gray-500">
-          Você pode usar tags HTML para formatação e também pressionar Enter para quebras de linha. As quebras serão preservadas mesmo ao usar as tags HTML.
-        </p>
+        
+        <div className="mt-1 text-xs text-gray-500 space-y-1">
+          <p>
+            Você pode usar tags HTML para formatação e também pressionar Enter para quebras de linha.
+          </p>
+          <p>
+            <strong>Dica:</strong> Copie uma imagem (Ctrl+C) e cole diretamente aqui (Ctrl+V). As imagens serão inseridas na posição do cursor.
+          </p>
+        </div>
       </div>
+
+      {/* Image gallery */}
+      {uploadedImages.length > 0 && (
+        <div className="mb-4">
+          <h3 className="block text-sm font-medium text-gray-700 mb-2">Imagens Carregadas</h3>
+          <div className="flex flex-wrap gap-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
+            {uploadedImages.map((img) => (
+              <div key={img.id} className="relative group">
+                <div className="w-24 h-24 border border-gray-300 rounded-md overflow-hidden bg-white">
+                  <img 
+                    src={img.url} 
+                    alt="Imagem carregada" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  {/* Botão para inserir imagem */}
+                  <button
+                    type="button"
+                    className="p-1 bg-white rounded-full mx-1"
+                    title="Inserir imagem"
+                    onClick={() => insertGalleryImage(img.id, img.url)}
+                  >
+                    <ImageIcon size={16} />
+                  </button>
+                  
+                  {/* Botão para remover imagem */}
+                  <button
+                    type="button"
+                    className="p-1 bg-white rounded-full mx-1"
+                    title="Remover imagem"
+                    onClick={() => removeImage(img.id)}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Clique em uma imagem para inseri-la na posição atual do cursor.
+          </p>
+        </div>
+      )}
 
       {/* Preview */}
       <div className="mb-4">        
@@ -224,6 +434,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
           type="submit"
           variant="primary"
           icon={<SaveIcon size={16} />}
+          disabled={isUploading}
         >
           {isEditing ? 'Salvar Alterações' : 'Criar Conteúdo'}
         </Button>
