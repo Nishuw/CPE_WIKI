@@ -20,7 +20,7 @@ const TopicDetailPage: React.FC = () => {
   }
   
   const handleAddContent = () => {
-    setEditingContentId(undefined);
+    setEditingContentId(undefined); // Explicitly undefined for new content
     setShowEditor(true);
   };
   
@@ -39,22 +39,22 @@ const TopicDetailPage: React.FC = () => {
       <div className="mb-6">
         <Link 
           to="/admin/topics"
-          className="inline-flex items-center text-blue-900 hover:underline"
+          className="inline-flex items-center text-blue-900 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
         >
           <ArrowLeftIcon size={16} className="mr-1" />
-          Back to Topics
+          Voltar aos Tópicos
         </Link>
       </div>
       
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{topic.title}</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{topic.title}</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
           Gerenciar conteúdo e subtópicos para este tópico.
         </p>
       </div>
       
       {showEditor ? (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
           <ContentEditor 
             contentId={editingContentId}
             topicId={topicId}
@@ -63,9 +63,9 @@ const TopicDetailPage: React.FC = () => {
           <div className="mt-4">
             <button
               onClick={() => setShowEditor(false)}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             >
-              Cancel and return to content list
+              Cancelar e voltar para a lista de conteúdo
             </button>
           </div>
         </div>
@@ -77,15 +77,15 @@ const TopicDetailPage: React.FC = () => {
         />
       )}
       
-      {childTopics.length > 0 && (
-        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Subtopics</h2>
+      {childTopics.length > 0 && !showEditor && (
+        <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Subtópicos</h2>
           <div className="space-y-2">
             {childTopics.map(childTopic => (
-              <div key={childTopic.id} className="p-3 border border-gray-200 rounded-md hover:bg-gray-50">
+              <div key={childTopic.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
                 <Link 
                   to={`/admin/topics/${childTopic.id}`}
-                  className="font-medium text-blue-900 hover:underline"
+                  className="font-medium text-blue-900 dark:text-blue-400 hover:underline"
                 >
                   {childTopic.title}
                 </Link>

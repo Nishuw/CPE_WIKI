@@ -7,24 +7,41 @@ import { LockIcon, MailIcon, UserIcon } from 'lucide-react'; // Import UserIcon
 // Define os modos possíveis do formulário
 type FormMode = 'login' | 'signup';
 
-const AuthForm: React.FC = () => {
+// Define a prop para forçar tema, se necessário no futuro, mas por agora vamos focar nas classes diretas.
+interface AuthFormProps {
+  forceTheme?: 'light' | 'dark'; // Prop para forçar tema no container do AuthForm, não nos inputs diretamente
+}
+
+const AuthForm: React.FC<AuthFormProps> = ({ forceTheme }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [username, setUsername] = useState(''); // Novo estado para username
+  const [username, setUsername] = useState('');
   const [mode, setMode] = useState<FormMode>('login');
-  // Assumindo que a função signup no useAuth agora aceita username
   const { login, signup, isLoading, error: authError } = useAuth(); 
   const [localError, setLocalError] = useState('');
 
   const isLoginMode = mode === 'login';
+
+  // Classes para forçar tema claro nos inputs e labels
+  const lightInputClass = "!bg-white !text-gray-900 !border-gray-300 placeholder:!text-gray-400 focus:!ring-blue-500 focus:!border-blue-500";
+  const lightLabelClass = "!text-gray-700";
+  const lightIconClass = "!text-gray-400";
+  const lightLinkClass = "!text-indigo-600 hover:!text-indigo-500";
+  const lightSubtextClass = "!text-gray-600";
+  const lightTitleClass = "!text-gray-800";
+  const lightErrorTextClass = "!text-red-700 !bg-red-100 !border-red-200";
+
+  // Determina as classes do container do AuthForm
+  // Se forceTheme for light, usa fundo branco. Caso contrário, permite que o tema do sistema (se houver) funcione.
+  const authFormContainerClass = `w-full max-w-md p-8 space-y-6 rounded-lg shadow-xl border ${forceTheme === 'light' ? 'bg-white border-gray-200' : 'bg-white dark:bg-gray-800 dark:border-gray-700'}`;
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
 
     if (!isLoginMode) {
-      // Validação para o modo de registro (incluindo username)
       if (!username.trim()) {
           setLocalError('Por favor, insira um nome de usuário.');
           return;
@@ -37,10 +54,8 @@ const AuthForm: React.FC = () => {
            setLocalError('A senha deve ter pelo menos 6 caracteres.');
            return;
        }
-      // Chamar a função de registro do contexto com username
-      await signup(email, password, username.trim()); // Passa username
+      await signup(email, password, username.trim());
     } else {
-      // Chamar a função de login do contexto
       await login(email, password);
     }
   };
@@ -50,29 +65,29 @@ const AuthForm: React.FC = () => {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
-    setUsername(''); // Limpa username ao trocar de modo
+    setUsername('');
     setLocalError('');
   };
 
   return (
+    // Aplica a classe do container aqui. Para este caso específico, queremos sempre branco.
     <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-xl border border-gray-200">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <h1 className={`text-3xl font-bold mb-2 ${lightTitleClass}`}>
           {isLoginMode ? 'Entrar' : 'Criar Conta'}
         </h1>
-        <p className="text-gray-600">
+        <p className={lightSubtextClass}>
           {isLoginMode ? 'Entre com suas credenciais' : 'Preencha os dados para se registrar'}
         </p>
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit}>
         {(authError || localError) && (
-          <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md border border-red-200" data-testid="auth-error">
+          <div className={`p-3 text-sm rounded-md border ${lightErrorTextClass}`} data-testid="auth-error">
             {localError || authError}
           </div>
         )}
 
-        {/* Campo de Username - Apenas no modo Signup */}
         {!isLoginMode && (
              <Input
                 id="username"
@@ -83,8 +98,9 @@ const AuthForm: React.FC = () => {
                 placeholder="Seu nome para exibir"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="pl-10"
-                icon={<UserIcon className="w-5 h-5 text-gray-400" />} // Use UserIcon
+                className={`pl-10 ${lightInputClass}`}
+                labelClassName={lightLabelClass} // Passa a classe da label para o Input
+                icon={<UserIcon className={`w-5 h-5 ${lightIconClass}`} />} 
              />
         )}
 
@@ -97,8 +113,9 @@ const AuthForm: React.FC = () => {
           placeholder="seuemail@exemplo.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="pl-10"
-          icon={<MailIcon className="w-5 h-5 text-gray-400" />}
+          className={`pl-10 ${lightInputClass}`}
+          labelClassName={lightLabelClass} // Passa a classe da label para o Input
+          icon={<MailIcon className={`w-5 h-5 ${lightIconClass}`} />}
         />
 
         <Input
@@ -110,11 +127,11 @@ const AuthForm: React.FC = () => {
           placeholder={isLoginMode ? "Sua senha" : "Mínimo 6 caracteres"}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="pl-10"
-          icon={<LockIcon className="w-5 h-5 text-gray-400" />}
+          className={`pl-10 ${lightInputClass}`}
+          labelClassName={lightLabelClass} // Passa a classe da label para o Input
+          icon={<LockIcon className={`w-5 h-5 ${lightIconClass}`} />}
         />
 
-        {/* Campo de Confirmar Senha - Apenas no modo Signup */}
         {!isLoginMode && (
           <Input
             id="confirmPassword"
@@ -125,8 +142,9 @@ const AuthForm: React.FC = () => {
             placeholder="Repita a senha"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="pl-10"
-            icon={<LockIcon className="w-5 h-5 text-gray-400" />}
+            className={`pl-10 ${lightInputClass}`}
+            labelClassName={lightLabelClass} // Passa a classe da label para o Input
+            icon={<LockIcon className={`w-5 h-5 ${lightIconClass}`} />}
           />
         )}
 
@@ -141,12 +159,12 @@ const AuthForm: React.FC = () => {
           {isLoading ? (isLoginMode ? 'Entrando...' : 'Cadastrando...') : (isLoginMode ? 'Entrar' : 'Cadastrar')}
         </Button>
 
-         <p className="text-sm text-center text-gray-600 !mt-6" data-testid="toggle-mode-text">
+         <p className={`text-sm text-center !mt-6 ${lightSubtextClass}`} data-testid="toggle-mode-text">
            {isLoginMode ? 'Não tem uma conta?' : 'Já tem uma conta?'}
            <button
              type="button"
              onClick={toggleMode}
-             className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded"
+             className={`ml-1 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded ${lightLinkClass}`}
              disabled={isLoading}
            >
              {isLoginMode ? 'Cadastre-se' : 'Faça Login'}

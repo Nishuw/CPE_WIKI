@@ -3,15 +3,11 @@ import TopicList from '../../components/admin/TopicList';
 import TopicForm from '../../components/admin/TopicForm';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import MoveTopicModal from '../../components/admin/MoveTopicModal';
-// Importa as funções necessárias do contexto, incluindo reorderTopic
 import { useContent } from '../../context/ContentContext';
 import { toast } from 'react-hot-toast';
 
 const TopicManagementPage: React.FC = () => {
-  // Pega as funções do contexto, incluindo a nova reorderTopic
   const { deleteTopic, moveTopic, reorderTopic } = useContent();
-
-  // Estados existentes...
   const [showForm, setShowForm] = useState(false);
   const [editingTopicId, setEditingTopicId] = useState<string | undefined>(undefined);
   const [parentTopicId, setParentTopicId] = useState<string | null>(null);
@@ -20,7 +16,6 @@ const TopicManagementPage: React.FC = () => {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [topicToMoveId, setTopicToMoveId] = useState<string | null>(null);
 
-  // --- Handlers Existentes ---
   const handleAddClick = (parentId: string | null) => {
     setParentTopicId(parentId);
     setEditingTopicId(undefined);
@@ -29,7 +24,7 @@ const TopicManagementPage: React.FC = () => {
 
   const handleEditClick = (topicId: string) => {
     setEditingTopicId(topicId);
-    setParentTopicId(null); // Certifica que não está adicionando
+    setParentTopicId(null);
     setShowForm(true);
   };
 
@@ -52,20 +47,14 @@ const TopicManagementPage: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (topicToDeleteId) {
-      // Usando toast.promise para feedback
       const promise = deleteTopic(topicToDeleteId);
       toast.promise(promise, {
         loading: 'Excluindo tópico...',
         success: 'Tópico excluído com sucesso!',
-        error: (err) => `Erro ao excluir: ${err.message || 'Erro desconhecido'}` // Exibe erro específico
+        error: (err) => `Erro ao excluir: ${err.message || 'Erro desconhecido'}`
       });
-      // Limpa o estado independentemente do resultado da promise aqui,
-      // pois o toast lida com a notificação.
       setShowConfirmDialog(false);
       setTopicToDeleteId(null);
-    } else {
-        setShowConfirmDialog(false);
-        setTopicToDeleteId(null);
     }
   };
 
@@ -96,9 +85,6 @@ const TopicManagementPage: React.FC = () => {
           setShowMoveModal(false);
           setTopicToMoveId(null);
       }
-    } else {
-        setShowMoveModal(false);
-        setTopicToMoveId(null);
     }
   };
 
@@ -107,45 +93,31 @@ const TopicManagementPage: React.FC = () => {
     setTopicToMoveId(null);
   };
 
-  // --- Fim dos Handlers Existentes ---
-
-
-  // *** INÍCIO: NOVO HANDLER PARA REORDENAR ***
   const handleRequestReorderTopic = async (topicId: string, direction: 'up' | 'down') => {
     if (!reorderTopic) {
         console.error("reorderTopic function is not available in ContentContext");
         toast.error('Erro interno: Funcionalidade de reordenar não encontrada.');
         return;
     }
-
-    // Chama a função do contexto e usa toast.promise para feedback
-    // Não precisa de loading/success aqui, pois a lista atualiza automaticamente
-    // via listener. Um toast de erro é útil.
     try {
         await reorderTopic(topicId, direction);
-        // Opcional: um toast de sucesso rápido, mas geralmente a atualização visual basta.
-        // toast.success('Ordem atualizada.');
     } catch (error: any) {
         console.error("Error reordering topic:", error);
         toast.error(`Erro ao reordenar: ${error.message || 'Erro desconhecido'}`);
     }
   };
-  // *** FIM: NOVO HANDLER PARA REORDENAR ***
 
-
-  // --- Renderização do Componente ---
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"> {/* Adicionado padding */}
-      <div className="mb-8 pb-4 border-b border-gray-200"> {/* Divisão visual */}
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Gerenciamento de Tópicos</h1>
-        <p className="text-gray-500 mt-1 text-sm">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Gerenciamento de Tópicos</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
           Crie, edite, mova e organize a ordem dos tópicos para estruturar seu conteúdo.
         </p>
       </div>
 
-      {/* Renderiza o formulário ou a lista de tópicos */}
       {showForm ? (
-        <div className="mb-8 bg-white p-6 rounded-lg shadow border border-gray-200"> {/* Estilo para form */}
+        <div className="mb-8 bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
           <TopicForm
             topicId={editingTopicId}
             parentId={parentTopicId}
@@ -154,17 +126,15 @@ const TopicManagementPage: React.FC = () => {
           />
         </div>
       ) : (
-        // Passa a nova função handleRequestReorderTopic para o TopicList
         <TopicList
           onAddTopic={handleAddClick}
           onEditTopic={handleEditClick}
           onRequestDeleteTopic={handleRequestDeleteTopic}
           onRequestMoveTopic={handleRequestMoveTopic}
-          onRequestReorderTopic={handleRequestReorderTopic} // <-- Passa o novo handler
+          onRequestReorderTopic={handleRequestReorderTopic}
         />
       )}
 
-      {/* Renderiza o diálogo de confirmação de exclusão */}
       <ConfirmDialog
         isOpen={showConfirmDialog}
         title="Confirmar Exclusão"
@@ -173,10 +143,9 @@ const TopicManagementPage: React.FC = () => {
         onCancel={handleCancelDelete}
         confirmText="Excluir"
         cancelText="Cancelar"
-        variant="danger" // Adiciona variante visual para perigo
+        variant="danger"
       />
 
-      {/* Renderiza o modal para mover tópico (mudar pai) */}
       <MoveTopicModal
         isOpen={showMoveModal}
         topicIdToMove={topicToMoveId}

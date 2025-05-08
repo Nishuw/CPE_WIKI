@@ -7,15 +7,13 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Timestamp } from 'firebase/firestore';
 
-// Helper function to convert Firestore Timestamp or string/number date to Date object
-// Consider moving this to a shared utils file later
 const convertToDate = (dateValue: unknown): Date | null => {
   if (!dateValue) return null;
   if (dateValue instanceof Timestamp) {
     return dateValue.toDate();
   }
   if (dateValue instanceof Date) {
-    return dateValue; // Already a Date object
+    return dateValue;
   }
   try {
     const date = new Date(dateValue as string | number);
@@ -25,7 +23,7 @@ const convertToDate = (dateValue: unknown): Date | null => {
   } catch (e) {
     // Ignore parsing errors
   }
-  return null; // Return null if conversion fails
+  return null;
 };
 
 interface ContentListProps {
@@ -35,7 +33,7 @@ interface ContentListProps {
 }
 
 const ContentList: React.FC<ContentListProps> = ({ topicId, onAddContent, onEditContent }) => {
-    const { getContentsByTopicId, deleteContent, getTopicById, refreshData, getUserByUid } = useContent(); // Added getUserByUid
+    const { getContentsByTopicId, deleteContent, getTopicById, refreshData, getUserByUid } = useContent();
     const [contents, setContents] = useState<Content[]>([]);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [deletingContentId, setDeletingContentId] = useState<string | null>(null);
@@ -91,7 +89,7 @@ const ContentList: React.FC<ContentListProps> = ({ topicId, onAddContent, onEdit
     };
 
     if (!topic) {
-        return <div>Tópico não encontrado</div>;
+        return <div className="dark:text-gray-300">Tópico não encontrado</div>;
     }
 
     const isContentDeleting = (contentId: string) => {
@@ -116,10 +114,10 @@ const ContentList: React.FC<ContentListProps> = ({ topicId, onAddContent, onEdit
     };
 
     return (
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
             <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Conteúdo para: {topic.title} {/* Changed from "Content for" to "Conteúdo para" */}
+                <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+                    Conteúdo para: {topic.title}
                 </h3>
                 {onAddContent && (
                     <Button
@@ -131,15 +129,15 @@ const ContentList: React.FC<ContentListProps> = ({ topicId, onAddContent, onEdit
             </div>
 
             {contents.length > 0 ? (
-                <ul className="divide-y divide-gray-200">
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                     {contents.map((content) => (
-                        <li key={content.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                        <li key={content.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-gray-700">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <FileTextIcon size={20} className="text-blue-900 mr-3" />
+                                    <FileTextIcon size={20} className="text-blue-900 dark:text-blue-400 mr-3" />
                                     <div className="flex-grow">
-                                        <span className="block font-medium text-gray-800">{content.title}</span>
-                                        <p className="text-sm text-gray-500">Última atualização: {getFormattedUpdateInfo(content)}</p>
+                                        <span className="block font-medium text-gray-800 dark:text-gray-100">{content.title}</span>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Última atualização: {getFormattedUpdateInfo(content)}</p>
                                     </div>
                                 </div>                
                                 <div className="flex space-x-2 items-center flex-shrink-0">
@@ -156,10 +154,9 @@ const ContentList: React.FC<ContentListProps> = ({ topicId, onAddContent, onEdit
                                     {showConfirmDelete === content.id ? (
                                         <div className="flex space-x-2">
                                             <Button                            
-                                                variant="destructive"                  
+                                                variant="danger" // Changed from destructive to danger
                                                 size="sm"
                                                 onClick={() => confirmDelete(content.id)}
-                                                className="bg-red-600 text-white hover:bg-red-700"
                                             >
                                                 Confirmar
                                             </Button>
@@ -177,10 +174,10 @@ const ContentList: React.FC<ContentListProps> = ({ topicId, onAddContent, onEdit
                                             size="sm"
                                             onClick={() => handleDeleteClick(content.id)}
                                             icon={<TrashIcon size={16} />}
-                                            className={`text-red-600 hover:text-red-800 ${isContentDeleting(content.id) ? 'cursor-not-allowed opacity-50' : ''}`}
+                                            className={`text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 ${isContentDeleting(content.id) ? 'cursor-not-allowed opacity-50' : ''}`}
                                             disabled={isContentDeleting(content.id)}
                                         >
-                                            Excluir {/* Changed from Delete to Excluir */}
+                                            Excluir
                                         </Button>
                                     )}
                                 </div>
@@ -190,7 +187,7 @@ const ContentList: React.FC<ContentListProps> = ({ topicId, onAddContent, onEdit
                 </ul>
             ) : (
                 <div className="px-4 py-5 sm:px-6 text-center">                                
-                    <p className="text-gray-500">Nenhum conteúdo disponível para este tópico ainda.</p>
+                    <p className="text-gray-500 dark:text-gray-400">Nenhum conteúdo disponível para este tópico ainda.</p>
                     {onAddContent && (
                         <Button
                             variant="outline"

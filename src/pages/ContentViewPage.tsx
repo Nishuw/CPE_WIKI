@@ -62,7 +62,6 @@ const ContentViewPage: React.FC = () => {
           setFormattedUpdatedAt('Data inválida');
         }
 
-        // Use updatedByUsername and createdByUsername from the content object itself
         const username = foundContent.updatedByUsername || foundContent.createdByUsername || 'Desconhecido';
         setUpdatedByUsername(username);
 
@@ -70,13 +69,13 @@ const ContentViewPage: React.FC = () => {
     } else {
       setContentToShow(null);
     }
-  }, [contentId, contents]); // Removed getUserByUid dependency as we use denormalized fields
+  }, [contentId, contents]);
 
 
   if (authIsLoading || contentToShow === undefined) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <p>Carregando conteúdo...</p>
+        <p className="dark:text-gray-300">Carregando conteúdo...</p>
       </div>
     );
   }
@@ -84,8 +83,8 @@ const ContentViewPage: React.FC = () => {
   if (!contentToShow && contentId) {
      return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Não foi possível encontrar o conteúdo.</h2>
-        <Link to={topicId ? `/topics/${topicId}` : '/'} className="text-blue-900 hover:underline">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Não foi possível encontrar o conteúdo.</h2>
+        <Link to={topicId ? `/topics/${topicId}` : '/'} className="text-blue-900 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
             {topicId ? 'Voltar ao tópico' : 'Voltar para a página inicial'}
         </Link>
       </div>
@@ -102,7 +101,7 @@ const ContentViewPage: React.FC = () => {
               navigate(
                 contentToShow.topicId 
                   ? `/admin/topics/${contentToShow.topicId}/content/${contentToShow.id}/edit`
-                  : `/admin/content/${contentToShow.id}/edit` // Fallback if topicId not in content (should not happen)
+                  : `/admin/content/${contentToShow.id}/edit`
               )
             }
             icon={<EditIcon size={16} />}
@@ -113,8 +112,8 @@ const ContentViewPage: React.FC = () => {
       </div>
       {!contentId && contents.length === 0 && topicId && (
             <div className="text-center py-12">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Não há conteúdos neste tópico</h2>
-                <p className="text-gray-600 mb-4">Que tal adicionar o primeiro?</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Não há conteúdos neste tópico</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">Que tal adicionar o primeiro?</p>
                 {user?.role === 'admin' && topicId && (
                      <Button onClick={() => navigate(`/admin/topics/${topicId}/content/new`)}>
                         Adicionar Conteúdo
@@ -123,27 +122,26 @@ const ContentViewPage: React.FC = () => {
             </div>
         )}
        {contentToShow && (
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{contentToShow.title}</h1>
+        <div className="bg-white rounded-lg shadow-md p-8 dark:bg-gray-800 dark:text-gray-100">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{contentToShow.title}</h1>
           {formattedUpdatedAt && (
-            <div className="text-sm text-gray-500 mb-6">
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
               Última atualização: {formattedUpdatedAt} por {updatedByUsername}
             </div>
           )}
-          {/* Adicionado whitespace-pre-line aqui */}
           <div 
-            className="prose max-w-none whitespace-pre-line" 
+            className="prose max-w-none whitespace-pre-line dark:prose-invert" 
             dangerouslySetInnerHTML={{ __html: contentToShow.body }} 
           />
         </div>
         )}
          {!contentToShow && !contentId && contents.length > 0 && topicId && ( 
-                <div className="bg-white rounded-lg shadow-md p-6">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Conteúdos neste tópico:</h2>
+                <div className="bg-white rounded-lg shadow-md p-6 dark:bg-gray-800 dark:text-gray-100">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Conteúdos neste tópico:</h2>
                     <ul className='space-y-3'>
                     {contents.map(c => (
-                         <li key={c.id} className="border-b border-gray-100 last:border-b-0 pb-2 mb-2">
-                            <Link to={`/topics/${topicId}/content/${c.id}`} className="text-blue-700 hover:text-blue-900 hover:underline">
+                         <li key={c.id} className="border-b border-gray-100 dark:border-gray-700 last:border-b-0 pb-2 mb-2">
+                            <Link to={`/topics/${topicId}/content/${c.id}`} className="text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
                                 {c.title}
                             </Link>
                          </li>

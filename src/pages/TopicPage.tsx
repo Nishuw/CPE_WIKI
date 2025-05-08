@@ -32,7 +32,7 @@ const TopicPage: React.FC = () => {
     getTopicById, 
     getChildTopics, 
     getContentsByTopicId,
-    getUserByUid // Added getUserByUid
+    getUserByUid
   } = useContent();
   
   const topic = getTopicById(topicId);
@@ -42,9 +42,9 @@ const TopicPage: React.FC = () => {
   if (!topic) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Tópico não encontrado</h2>
-        <p className="text-gray-600 mb-4">O tópico que você está procurando não existe ou foi removido.</p>
-        <Link to="/" className="text-blue-900 hover:underline">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Tópico não encontrado</h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-4">O tópico que você está procurando não existe ou foi removido.</p>
+        <Link to="/" className="text-blue-900 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
           Voltar para a página inicial
        </Link>
       </div>
@@ -69,26 +69,25 @@ const TopicPage: React.FC = () => {
     <>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{topic.title}</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{topic.title}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Última atualização: {formattedUpdatedAt} por {updatedByUsername}
           </p>
         </div>
 
-        {/* Child topics section */}
         {childTopics.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Subtópicos</h2>
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8 dark:bg-gray-800">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Subtópicos</h2>
             <div className="grid md:grid-cols-2 gap-4">
               {childTopics.map(childTopic => (
                 <Link 
                   key={childTopic.id} 
                   to={`/topics/${childTopic.id}`}
-                  className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                  className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow dark:border-gray-700 dark:hover:bg-gray-700"
                 >
                   <div className="flex items-center">
-                    <FolderIcon size={20} className="text-blue-900 mr-3" />
-                    <span className="font-medium text-blue-900">{childTopic.title}</span>
+                    <FolderIcon size={20} className="text-blue-900 dark:text-blue-400 mr-3" />
+                    <span className="font-medium text-blue-900 dark:text-blue-400">{childTopic.title}</span>
                   </div>
                 </Link>
               ))}
@@ -96,20 +95,19 @@ const TopicPage: React.FC = () => {
           </div>
         )}
 
-        {/* Contents section */}
         {contents.length > 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Conteúdo</h2>
+          <div className="bg-white rounded-lg shadow-md p-6 dark:bg-gray-800">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Conteúdo</h2>
             <ul className="space-y-4">
               {contents.map(content => (
                 <li key={content.id}>
                   <Link 
                     to={`/topics/${topicId}/content/${content.id}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow dark:border-gray-700 dark:hover:bg-gray-700"
                   >
                     <div className="flex items-center">
-                      <FileTextIcon size={20} className="text-blue-900 mr-3" />
-                      <span className="font-medium text-blue-900">{content.title}</span>
+                      <FileTextIcon size={20} className="text-blue-900 dark:text-blue-400 mr-3" />
+                      <span className="font-medium text-blue-900 dark:text-blue-400">{content.title}</span>
                     </div>
                   </Link>
                 </li>
@@ -117,8 +115,8 @@ const TopicPage: React.FC = () => {
             </ul>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <p className="text-gray-500 py-4">
+          <div className="bg-white rounded-lg shadow-md p-6 text-center dark:bg-gray-800">
+            <p className="text-gray-500 dark:text-gray-400 py-4">
               Nenhum conteúdo disponível para este tópico ainda.
             </p>
           </div>

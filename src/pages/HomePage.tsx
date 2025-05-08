@@ -95,48 +95,46 @@ const HomePage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Bem-vindo ao CPE - WIKI</h1>
-        <p className="text-lg text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Bem-vindo ao CPE - WIKI</h1>
+        <p className="text-lg text-gray-600 dark:text-gray-300">
           Seu local central para organizar e acessar conteúdos importantes.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-        {/* Main Categories Section */}
-        <div className="md:col-span-2 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Categorias Principais</h2>
+        <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Categorias Principais</h2>
           {loading ? (
-              <p className="text-gray-500 text-center py-6">Carregando categorias...</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-6">Carregando categorias...</p>
           ) : rootTopics.length > 0 ? (
             <div className="grid sm:grid-cols-2 gap-4">
               {rootTopics.map(topic => (
                 <Link
                   key={topic.id}
                   to={`/topics/${topic.id}`}
-                  className="block p-4 border border-gray-200 rounded-lg hover:shadow-lg hover:bg-gray-50 transition-all duration-200"
+                  className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
                 >
                   <div className="flex items-center">
-                    <FolderIcon size={20} className="text-blue-900 mr-3 flex-shrink-0" />
-                    <span className="font-medium text-base text-blue-900 truncate" title={topic.title}>{topic.title}</span>
+                    <FolderIcon size={20} className="text-blue-900 dark:text-blue-400 mr-3 flex-shrink-0" />
+                    <span className="font-medium text-base text-blue-900 dark:text-blue-400 truncate" title={topic.title}>{topic.title}</span>
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-6">Nenhuma categoria de conteúdo disponível ainda.</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-6">Nenhuma categoria de conteúdo disponível ainda.</p>
           )}
         </div>
 
-        {/* Recent Activity Section */}
-        <div className="md:col-span-1 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-            <ClockIcon size={20} className="mr-2 text-gray-700"/>
+        <div className="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
+            <ClockIcon size={20} className="mr-2 text-gray-700 dark:text-gray-300"/>
             Atividade Recente
           </h2>
           {loading ? (
             <div className="space-y-3 animate-pulse">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-10 bg-gray-200 rounded"></div>
+                <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
               ))}
             </div>
           ) : recentActivity.length > 0 ? (
@@ -145,18 +143,18 @@ const HomePage: React.FC = () => {
                 <li key={`${item.type}-${item.id}`}>
                   <Link 
                     to={item.link} 
-                    className="flex items-start p-2 rounded-md hover:bg-gray-100 transition-colors duration-150"
+                    className="flex items-start p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                   >
                     {item.type === 'topic' ? (
-                      <FolderIcon size={18} className="text-blue-900 mr-2.5 mt-0.5 flex-shrink-0" />
+                      <FolderIcon size={18} className="text-blue-900 dark:text-blue-400 mr-2.5 mt-0.5 flex-shrink-0" />
                     ) : (
-                      <FileTextIcon size={18} className="text-green-700 mr-2.5 mt-0.5 flex-shrink-0" />
+                      <FileTextIcon size={18} className="text-green-700 dark:text-green-400 mr-2.5 mt-0.5 flex-shrink-0" />
                     )}
                     <div className="flex-grow">
-                      <p className="text-sm font-medium text-gray-800 leading-tight truncate" title={item.title}>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight truncate" title={item.title}>
                           {item.title}
                        </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         Atualizado em: {formatDateTime(item.updatedAt)} por {item.updatedByUsername}
                       </p>
                     </div>
@@ -165,18 +163,17 @@ const HomePage: React.FC = () => {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500 text-sm text-center py-4">Nenhuma atividade recente encontrada.</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">Nenhuma atividade recente encontrada.</p>
           )}
         </div>
       </div>
 
-      {/* About Section */}
-      <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
+      <div className="bg-blue-50 dark:bg-gray-800 rounded-lg p-6 border border-blue-100 dark:border-gray-700">
         <div className="flex items-start">
-          <BookOpenIcon size={24} className="text-blue-900 mr-3 mt-1 flex-shrink-0" />
+          <BookOpenIcon size={24} className="text-blue-900 dark:text-blue-400 mr-3 mt-1 flex-shrink-0" />
           <div>
-            <h3 className="font-medium text-lg text-blue-900">Sobre o CPE - WIKI</h3>
-            <p className="text-gray-600 mt-1">
+            <h3 className="font-medium text-lg text-blue-900 dark:text-blue-400">Sobre o CPE - WIKI</h3>
+            <p className="text-gray-600 dark:text-gray-300 mt-1">
               O CPE - WIKI é uma plataforma para organizar e acessar conteúdos importantes.
               Navegue pelas categorias, veja informações detalhadas e encontre exatamente o que você precisa.
             </p>

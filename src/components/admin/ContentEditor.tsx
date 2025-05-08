@@ -139,7 +139,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     });
   };
 
-  const addLocalImageToEditor = (file: File) => {
+  const addLocalImageToEditor = useCallback((file: File) => {
     const localId = `local-img-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const blobUrl = URL.createObjectURL(file);
     setPendingImages(prev => new Map(prev).set(localId, file));
@@ -159,7 +159,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     } else {
         setBody(prevBody => prevBody + imgTag);
     }
-  };
+  }, [body]);
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -183,7 +183,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       return () => textareaElement.removeEventListener('paste', handlePaste);
     }
     return () => {};
-  }, [isAuthenticated, body, addLocalImageToEditor]); // Adicionado addLocalImageToEditor às dependências
+  }, [isAuthenticated, addLocalImageToEditor]);
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files || !isAuthenticated) return;
@@ -327,24 +327,24 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
   };
 
   if (authIsLoading || (isEditing && contentIsLoading && !getContentById(contentId!))) {
-      return <p>Carregando editor...</p>;
+      return <p className="dark:text-gray-300">Carregando editor...</p>;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
         {isEditing ? 'Editar Conteúdo' : 'Criar Novo Conteúdo'}
       </h2>
-      {error && <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md whitespace-pre-wrap">{error}</div>}
+      {error && <div className="p-3 text-sm text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900 dark:bg-opacity-30 rounded-md whitespace-pre-wrap">{error}</div>}
       
-      {isUploadingGlobal && <p className="text-sm text-blue-600">Salvando e processando imagens...</p>}
+      {isUploadingGlobal && <p className="text-sm text-blue-600 dark:text-blue-400">Salvando e processando imagens...</p>}
       {Object.entries(uploadProgress).map(([localId, progress]) => {
         const image = currentSessionImages.find(img => img.localId === localId);
         if (image && progress >= 0 && progress < 100) {
-          return <div key={localId} className="text-xs text-gray-600">Enviando {image.name || localId}: {progress.toFixed(0)}%</div>;
+          return <div key={localId} className="text-xs text-gray-600 dark:text-gray-300">Enviando {image.name || localId}: {progress.toFixed(0)}%</div>;
         }
         if (image && progress === -1) {
-            return <div key={localId} className="text-xs text-red-600">Erro ao enviar {image.name || localId}</div>;
+            return <div key={localId} className="text-xs text-red-600 dark:text-red-400">Erro ao enviar {image.name || localId}</div>;
         }
         return null;
       })}
@@ -352,25 +352,25 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       <Input id="content-title" label="Título do Conteúdo" type="text" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Insira o título do conteúdo" disabled={!isAuthenticated || isUploadingGlobal} />
       
       <div className="mb-4">
-        <label htmlFor="content-body" className="block text-sm font-medium text-gray-700 mb-1">Conteúdo</label>
-        <div className="border border-gray-300 rounded-md">
-          <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-2 items-center">
-            <button type="button" className="p-1 rounded hover:bg-gray-200 disabled:opacity-50" onClick={() => setBody(b => b + "<h2>Título</h2>")} disabled={!isAuthenticated || isUploadingGlobal}>Título H2</button>
-            <button type="button" className="p-1 rounded hover:bg-gray-200 disabled:opacity-50" onClick={() => setBody(b => b + "<p>Parágrafo</p>")} disabled={!isAuthenticated || isUploadingGlobal}>Parágrafo</button>
-            <button type="button" className="p-1 rounded hover:bg-gray-200 disabled:opacity-50" onClick={() => setBody(b => b + "<strong>Negrito</strong>")} disabled={!isAuthenticated || isUploadingGlobal}>Negrito</button>
-            <button type="button" className="p-1 rounded hover:bg-gray-200 disabled:opacity-50" onClick={() => setBody(b => b + "<em>Itálico</em>")} disabled={!isAuthenticated || isUploadingGlobal}>Itálico</button>
-            <button type="button" className="p-1 rounded hover:bg-gray-200 disabled:opacity-50" onClick={() => setBody(b => b + '<a href="">Link</a>')} disabled={!isAuthenticated || isUploadingGlobal}>Link/Url</button>
-            <button type="button" className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 flex items-center" onClick={() => fileInputRef.current?.click()} disabled={!isAuthenticated || isUploadingGlobal}><ImageIcon size={16} className="inline mr-1" />Carregar Imagem</button>
+        <label htmlFor="content-body" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Conteúdo</label>
+        <div className="border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
+          <div className="bg-gray-50 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600 p-2 flex flex-wrap gap-2 items-center">
+            <button type="button" className="p-1 rounded hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-600 disabled:opacity-50" onClick={() => setBody(b => b + "<h2>Título</h2>")} disabled={!isAuthenticated || isUploadingGlobal}>Título H2</button>
+            <button type="button" className="p-1 rounded hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-600 disabled:opacity-50" onClick={() => setBody(b => b + "<p>Parágrafo</p>")} disabled={!isAuthenticated || isUploadingGlobal}>Parágrafo</button>
+            <button type="button" className="p-1 rounded hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-600 disabled:opacity-50" onClick={() => setBody(b => b + "<strong>Negrito</strong>")} disabled={!isAuthenticated || isUploadingGlobal}>Negrito</button>
+            <button type="button" className="p-1 rounded hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-600 disabled:opacity-50" onClick={() => setBody(b => b + "<em>Itálico</em>")} disabled={!isAuthenticated || isUploadingGlobal}>Itálico</button>
+            <button type="button" className="p-1 rounded hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-600 disabled:opacity-50" onClick={() => setBody(b => b + '<a href="">Link</a>')} disabled={!isAuthenticated || isUploadingGlobal}>Link/Url</button>
+            <button type="button" className="p-1 rounded hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 flex items-center" onClick={() => fileInputRef.current?.click()} disabled={!isAuthenticated || isUploadingGlobal}><ImageIcon size={16} className="inline mr-1" />Carregar Imagem</button>
             <input type="file" ref={fileInputRef} onChange={(e) => handleFileSelect(e.target.files)} accept="image/*" multiple className="hidden" disabled={!isAuthenticated || isUploadingGlobal} />
           </div>
-          <textarea id="content-body" ref={textareaRef} className="w-full px-3 py-2 border-0 focus:ring-0 focus:outline-none min-h-[200px]" rows={10} value={body} onChange={(e) => setBody(e.target.value)} placeholder={isAuthenticated ? "Insira o conteúdo aqui. Cole imagens (Ctrl+V) ou use 'Carregar Imagem'." : "Faça login para adicionar conteúdo."} disabled={!isAuthenticated || isUploadingGlobal} />
+          <textarea id="content-body" ref={textareaRef} className="w-full px-3 py-2 border-0 focus:ring-0 focus:outline-none min-h-[200px] dark:bg-gray-800 dark:text-gray-200 dark:placeholder-gray-400" rows={10} value={body} onChange={(e) => setBody(e.target.value)} placeholder={isAuthenticated ? "Insira o conteúdo aqui. Cole imagens (Ctrl+V) ou use 'Carregar Imagem'." : "Faça login para adicionar conteúdo."} disabled={!isAuthenticated || isUploadingGlobal} />
         </div>
       </div>
 
       {currentSessionImages.length > 0 && (
         <div className="mb-4">
-          <h3 className="block text-sm font-medium text-gray-700 mb-2">Galeria de Imagens da Sessão</h3>
-          <div className="flex flex-wrap gap-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
+          <h3 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Galeria de Imagens da Sessão</h3>
+          <div className="flex flex-wrap gap-3 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md">
             {currentSessionImages.map((img) => {
               const progress = uploadProgress[img.localId];
               const displayUrl = img.blobUrl || img.firebaseUrl;
@@ -381,14 +381,14 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
                 {progress > 0 && progress < 100 && <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white text-xs z-10 rounded-md">{progress.toFixed(0)}%</div>}
                 {progress === -1 && <div className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-70 text-white text-xs z-10 rounded-md">Erro!</div>}
                 
-                <div className="w-full h-full border border-gray-300 rounded-md overflow-hidden bg-white">
+                <div className="w-full h-full border border-gray-300 dark:border-gray-500 rounded-md overflow-hidden bg-white dark:bg-gray-800">
                   <img src={displayUrl} alt={img.name} className={`w-full h-full object-cover ${progress > 0 && progress < 100 && progress !== -1 ? 'opacity-50' : ''}`} />
                 </div>
                 
                 {((typeof progress === 'undefined' && img.blobUrl) || progress === 100 || progress === -1 || (!img.file && img.firebaseUrl) ) && !isUploadingGlobal && (
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 rounded-md">
-                    <button type="button" className="p-1 bg-white rounded-full mx-1 shadow-md hover:bg-gray-100" title="Inserir imagem no editor" onClick={() => insertGalleryImage(img)}><ImageIcon size={16} /></button>
-                    <button type="button" className="p-1 bg-white text-red-600 rounded-full mx-1 shadow-md hover:bg-gray-100" title="Remover da galeria (e do editor se presente)" onClick={() => removeImageFromSession(img.localId)}><X size={16} /></button>
+                    <button type="button" className="p-1 bg-white dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 rounded-full mx-1 shadow-md hover:bg-gray-100" title="Inserir imagem no editor" onClick={() => insertGalleryImage(img)}><ImageIcon size={16} /></button>
+                    <button type="button" className="p-1 bg-white text-red-600 dark:bg-gray-600 dark:text-red-400 dark:hover:bg-gray-500 rounded-full mx-1 shadow-md hover:bg-gray-100" title="Remover da galeria (e do editor se presente)" onClick={() => removeImageFromSession(img.localId)}><X size={16} /></button>
                   </div>
                 )}
               </div>
@@ -398,9 +398,9 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       )}
 
       <div className="mb-4">
-        <h3 className="block text-sm font-medium text-gray-700 mb-1">Pré-visualização</h3>
+        <h3 className="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">Pré-visualização</h3>
         <div 
-          className="border border-gray-300 rounded-md p-4 prose max-w-none bg-white min-h-[100px] whitespace-pre-line" 
+          className="border border-gray-300 dark:border-gray-600 rounded-md p-4 prose max-w-none bg-white dark:bg-gray-800 dark:prose-invert min-h-[100px] whitespace-pre-line"
           dangerouslySetInnerHTML={{ __html: body }} 
         />
       </div>

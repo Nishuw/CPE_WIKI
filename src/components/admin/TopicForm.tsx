@@ -8,12 +8,14 @@ interface TopicFormProps {
   topicId?: string;
   parentId?: string | null;
   onSuccess?: () => void;
+  onCancel?: () => void; // Added onCancel prop
 }
  
 const TopicForm: React.FC<TopicFormProps> = ({ 
   topicId, 
   parentId = null,
-  onSuccess 
+  onSuccess,
+  onCancel // Added onCancel to destructuring
 }) => {
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
@@ -32,6 +34,8 @@ const TopicForm: React.FC<TopicFormProps> = ({
       if (topic) {
         setTitle(topic.title);
       }
+    } else {
+      setTitle(''); // Clear title when not editing (e.g. adding a new topic after editing one)
     }
   }, [topicId, getTopicById]);
   
@@ -45,7 +49,7 @@ const TopicForm: React.FC<TopicFormProps> = ({
     }
     
     try {
-      if (isEditing) {
+      if (isEditing && topicId) { // Ensure topicId is present for editing
         updateTopic(topicId, title);
       } else {
         addTopic(title, parentId);
@@ -57,17 +61,19 @@ const TopicForm: React.FC<TopicFormProps> = ({
       }
     } catch (err) {
       setError('Falha ao salvar o tópico');
+      console.error("Error saving topic:", err); // Log the actual error
     }
   };
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-sm">
-      <h2 className="text-xl font-semibold text-gray-800">
-        {isEditing ? 'Editar Tópico' : 'Criar Novo Tópico'}
+    // Removed bg-white, p-6, rounded-lg, shadow-sm as parent now handles card styling
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+        {isEditing ? 'Editar Tópico' : (parentId ? 'Criar Subtópico' : 'Criar Novo Tópico Raiz')}
       </h2>
       
       {error && (
-        <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
+        <div className="p-3 text-sm text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900 dark:bg-opacity-30 rounded-md">
           {error}
         </div>
       )}
@@ -82,13 +88,22 @@ const TopicForm: React.FC<TopicFormProps> = ({
           placeholder="Insira o título do tópico"
         />
 
-        {parentId && (
-          <div className="text-sm text-gray-500">
-            Este tópico será criado em: {getTopicById(parentId)?.title || 'Raiz'}
+        {parentId && getTopicById(parentId) && (
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Será criado como subtópico de: <strong>{getTopicById(parentId)?.title}</strong>
           </div>
         )}
 
-        <div className="flex justify-end space-x-4">
+        <div className="flex justify-end space-x-3">
+          {onCancel && (
+            <Button
+              type="button" // Important: type is button to not submit form
+              variant="outline" // Or another appropriate variant like 'ghost' or 'secondary'
+              onClick={onCancel} 
+            >
+              Cancelar
+            </Button>
+          )}
           <Button
             type="submit"
             variant="primary"
