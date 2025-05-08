@@ -53,27 +53,97 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       if (!textareaRef.current || !e.clipboardData) return;
       
       const items = e.clipboardData.items;
+      let hasImage = false;
       
+      // Primeiro verificamos se tem alguma imagem nos itens colados
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
-          e.preventDefault(); // Previne o comportamento padrão de colar
-          
+          hasImage = true;
+          break;
+        }
+      }
+      
+      // Se não tem imagem, apenas deixa o comportamento padrão acontecer
+      if (!hasImage) return;
+      
+      // Se chegou aqui, temos pelo menos uma imagem
+      // Salvamos o estado atual do textarea antes de qualquer manipulação
+      const textarea = textareaRef.current;
+      const cursorPos = textarea.selectionStart;
+      const currentContent = body;
+      const textBefore = currentContent.substring(0, cursorPos);
+      const textAfter = currentContent.substring(cursorPos);
+      
+      // Agora processamos as imagens
+      e.preventDefault(); // Previne o comportamento padrão de colar
+      
+      // Processamos cada item que é uma imagem
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile();
           if (file) {
-            await handleImageUpload(file);
+            try {
+              setIsUploading(true);
+              
+              // Cria URL para o arquivo
+              const imageUrl = URL.createObjectURL(file);
+              const imageId = `img-${Date.now()}-${i}`; // Adicionamos índice para evitar colisões
+              
+              const newImage = {
+                id: imageId,
+                url: imageUrl,
+                file: file
+              };
+              
+              // Adiciona à galeria de imagens
+              setUploadedImages(prev => [...prev, newImage]);
+              
+              // Cria tag de imagem
+              const imgTag = `<img src="${imageUrl}" alt="Imagem colada" data-img-id="${imageId}" />`;
+              
+              // IMPORTANTE: Inserimos a imagem preservando o texto existente
+              // Atualizamos diretamente o estado usando a função updater para garantir o estado mais recente
+              setBody(prevBody => {
+                // Recalcular as posições caso o conteúdo tenha mudado
+                const updatedCursorPos = textarea.selectionStart;
+                const updatedBefore = prevBody.substring(0, updatedCursorPos);
+                const updatedAfter = prevBody.substring(updatedCursorPos);
+                
+                return updatedBefore + imgTag + updatedAfter;
+              });
+              
+              // Reposicionamos o cursor após a imagem
+              setTimeout(() => {
+                textarea.focus();
+                const imgTagLength = imgTag.length;
+                const newCursorPosition = cursorPos + imgTagLength;
+                textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+              }, 10);
+              
+            } catch (error) {
+              console.error('Erro ao processar imagem colada:', error);
+              setError('Falha ao processar imagem colada');
+            } finally {
+              setIsUploading(false);
+            }
           }
         }
       }
     };
 
-    // Adiciona evento de paste ao documento
-    document.addEventListener('paste', handlePaste);
+    // Adicionamos o evento ao textarea especificamente, não ao documento inteiro
+    const textareaElement = textareaRef.current;
+    if (textareaElement) {
+      textareaElement.addEventListener('paste', handlePaste);
+      
+      return () => {
+        textareaElement.removeEventListener('paste', handlePaste);
+      };
+    }
     
-    // Limpa o evento ao desmontar o componente
-    return () => {
-      document.removeEventListener('paste', handlePaste);
-    };
-  }, []);
+    // Fallback caso o textarea não esteja disponível
+    return () => {};
+  }, [body]); // Dependência importante: o body precisa estar aqui para sempre usar o valor mais recente
 
   // Função para lidar com o upload da imagem
   const handleImageUpload = async (file: File) => {
@@ -95,6 +165,10 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       
       // Se o textarea estiver focado, insere a imagem na posição do cursor
       if (document.activeElement === textareaRef.current) {
+        // Verificação de segurança: salvamos o conteúdo atual para garantir que não será perdido
+        const currentContent = textareaRef.current.value;
+        console.log('Conteúdo atual antes de inserir imagem:', currentContent);
+        
         insertImageAtCursor(imageId, imageUrl);
       }
       
@@ -118,7 +192,9 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     // Cria tag de imagem com o ID para referência
     const imgTag = `<img src="${imageUrl}" alt="Imagem carregada" data-img-id="${imageId}" />`;
     
-    setBody(textBefore + imgTag + textAfter);
+    // Importante: mantém o conteúdo existente e apenas insere a imagem na posição do cursor
+    const newBody = textBefore + imgTag + textAfter;
+    setBody(newBody);
     
     // Reposiciona o cursor após a imagem inserida
     setTimeout(() => {
@@ -126,6 +202,11 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       const newCursorPosition = cursorPos + imgTag.length;
       textarea.setSelectionRange(newCursorPosition, newCursorPosition);
     }, 0);
+    
+    // Debug: verifica se o texto está sendo preservado corretamente
+    console.log('Texto anterior à imagem:', textBefore);
+    console.log('Texto posterior à imagem:', textAfter);
+    console.log('Novo conteúdo completo:', newBody);
   };
 
   // Função para inserir uma imagem da galeria no ponto de seleção atual
