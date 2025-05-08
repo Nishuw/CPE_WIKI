@@ -30,17 +30,17 @@ const convertToDate = (dateValue: unknown): Date | null => {
 };
 
 const ContentViewPage: React.FC = () => {
-  const { getContentsByTopicId, getUserByUid } = useContent(); // Added getUserByUid
-  const { user, isLoading: authIsLoading } = useAuth(); // Renamed isLoading to authIsLoading for clarity
+  const { getContentsByTopicId, getUserByUid } = useContent();
+  const { user, isLoading: authIsLoading } = useAuth();
   const navigate = useNavigate();
   const { topicId, contentId } = useParams<{ topicId?: string; contentId?: string }>();
   const [contents, setContents] = useState<Content[]>([]);
-  const [contentToShow, setContentToShow] = useState<Content | null | undefined>(undefined); // Initialize with undefined to differentiate initial state
+  const [contentToShow, setContentToShow] = useState<Content | null | undefined>(undefined);
   const [updatedByUsername, setUpdatedByUsername] = useState<string>('Desconhecido');
   const [formattedUpdatedAt, setFormattedUpdatedAt] = useState<string>('');
 
   useEffect(() => {
-    const fetchContents = () => { // Removed async as getContentsByTopicId is synchronous
+    const fetchContents = () => {
       if (topicId) {
         const topicContents = getContentsByTopicId(topicId);
         setContents(topicContents || []);
@@ -62,23 +62,17 @@ const ContentViewPage: React.FC = () => {
           setFormattedUpdatedAt('Data inválida');
         }
 
-        let username = 'Desconhecido';
-        if (foundContent.updatedBy) {
-          const updater = getUserByUid(foundContent.updatedBy);
-          username = updater?.username || 'Desconhecido';
-        } else if (foundContent.createdBy) {
-          const creator = getUserByUid(foundContent.createdBy);
-          username = creator?.username || 'Desconhecido';
-        }
+        // Use updatedByUsername and createdByUsername from the content object itself
+        const username = foundContent.updatedByUsername || foundContent.createdByUsername || 'Desconhecido';
         setUpdatedByUsername(username);
+
       }
     } else {
-      setContentToShow(null); // Explicitly set to null if no contentId
+      setContentToShow(null);
     }
-  }, [contentId, contents, getUserByUid]);
+  }, [contentId, contents]); // Removed getUserByUid dependency as we use denormalized fields
 
 
-  // Use a combined loading state or check for initial undefined state of contentToShow
   if (authIsLoading || contentToShow === undefined) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
@@ -87,7 +81,7 @@ const ContentViewPage: React.FC = () => {
     );
   }
 
-  if (!contentToShow && contentId) { // If contentId is present but contentToShow is null after loading
+  if (!contentToShow && contentId) {
      return (
       <div className="max-w-4xl mx-auto text-center py-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Não foi possível encontrar o conteúdo.</h2>
@@ -98,7 +92,6 @@ const ContentViewPage: React.FC = () => {
     );
   }
 
-
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
@@ -107,11 +100,9 @@ const ContentViewPage: React.FC = () => {
             variant="outline"
             onClick={() =>
               navigate(
-                // Ensure topicId is used if available for a more specific edit route.
-                // Fallback to general content edit if topicId is not in the URL (e.g. direct link to content not within a topic context)
                 contentToShow.topicId 
                   ? `/admin/topics/${contentToShow.topicId}/content/${contentToShow.id}/edit`
-                  : `/admin/content/${contentToShow.id}/edit`
+                  : `/admin/content/${contentToShow.id}/edit` // Fallback if topicId not in content (should not happen)
               )
             }
             icon={<EditIcon size={16} />}
@@ -120,7 +111,7 @@ const ContentViewPage: React.FC = () => {
           </Button>
         )}
       </div>
-      {!contentId && contents.length === 0 && topicId && ( // Shows when on a topic page with no content
+      {!contentId && contents.length === 0 && topicId && (
             <div className="text-center py-12">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Não há conteúdos neste tópico</h2>
                 <p className="text-gray-600 mb-4">Que tal adicionar o primeiro?</p>
@@ -139,10 +130,14 @@ const ContentViewPage: React.FC = () => {
               Última atualização: {formattedUpdatedAt} por {updatedByUsername}
             </div>
           )}
-          <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: contentToShow.body }} />
+          {/* Adicionado whitespace-pre-line aqui */}
+          <div 
+            className="prose max-w-none whitespace-pre-line" 
+            dangerouslySetInnerHTML={{ __html: contentToShow.body }} 
+          />
         </div>
         )}
-         {!contentToShow && !contentId && contents.length > 0 && topicId && ( // List contents if no specific contentId in URL
+         {!contentToShow && !contentId && contents.length > 0 && topicId && ( 
                 <div className="bg-white rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Conteúdos neste tópico:</h2>
                     <ul className='space-y-3'>
