@@ -1,61 +1,52 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Import useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useContent } from '../context/ContentContext';
 import { FolderIcon, BookOpenIcon, ClockIcon, FileTextIcon } from 'lucide-react';
-import { Timestamp } from 'firebase/firestore'; // Import Timestamp
-import { Topic, Content, User } from '../types'; // Import types
+import { Timestamp } from 'firebase/firestore';
+import { Topic, Content } from '../types';
 
-// Helper function to convert Firestore Timestamp or string/number date to Date object
-// Consider moving this to a shared utils file later
 const convertToDate = (dateValue: unknown): Date | null => {
   if (!dateValue) return null;
   if (dateValue instanceof Timestamp) {
     return dateValue.toDate();
   }
   if (dateValue instanceof Date) {
-    return dateValue; // Already a Date object
+    return dateValue;
   }
   try {
     const date = new Date(dateValue as string | number);
     if (!isNaN(date.getTime())) {
       return date;
     }
-  } catch (e) { 
+  } catch (e) {
     // Ignore parsing errors
   }
-  return null; // Return null if conversion fails
+  return null;
 };
 
-// Interface for combined activity items
 interface ActivityItem {
   id: string;
   title: string;
   updatedAt: Date;
   type: 'topic' | 'content';
   link: string;
-  createdByUid: string; // Keep UID
-  createdByUsername: string | null; // Add username
+  updatedByUsername: string;
+  topicId?: string;
 }
 
 const HomePage: React.FC = () => {
-  // Get users and getUserByUid from useContent
-  const { getChildTopics, topics, contents, users, loading, getUserByUid } = useContent();
+  const { getChildTopics, topics, contents, loading } = useContent();
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
   const rootTopics = getChildTopics(null);
 
   useEffect(() => {
-    // Only process if content is not loading and users are available (or not loading - adjust as needed)
-    if (!loading && users.length > 0 || (!loading && !loading)) { // Simplified condition
-
+    if (!loading) {
       const combined: ActivityItem[] = [];
 
-      // Process topics
       topics.forEach(topic => {
         const updatedAtDate = convertToDate(topic.updatedAt);
-        // Find the user by createdBy UID
-        const creator = getUserByUid(topic.createdBy); 
-        const createdByUsername = creator?.username || 'Desconhecido'; // Use username or default
+        const usernameToShow = topic.updatedByUsername || topic.createdByUsername || 'Desconhecido';
 
         if (updatedAtDate && topic.title) {
           combined.push({
@@ -64,41 +55,32 @@ const HomePage: React.FC = () => {
             updatedAt: updatedAtDate,
             type: 'topic',
             link: `/topics/${topic.id}`,
-            createdByUid: topic.createdBy, // Store UID
-            createdByUsername // Store username
+            updatedByUsername: usernameToShow
           });
         }
       });
 
-      // Process contents
       contents.forEach(content => {
         const updatedAtDate = convertToDate(content.updatedAt);
-         // Find the user by createdBy UID
-        const creator = getUserByUid(content.createdBy);
-        const createdByUsername = creator?.username || 'Desconhecido';
-
+        const usernameToShow = content.updatedByUsername || content.createdByUsername || 'Desconhecido';
+        
         if (updatedAtDate && content.title) {
           combined.push({
             id: content.id,
             title: content.title,
             updatedAt: updatedAtDate,
             type: 'content',
-            link: `/topics/${content.topicId}`, // Link to parent topic
+            link: `/topics/${content.topicId}`,
             topicId: content.topicId,
-            createdByUid: content.createdBy,
-            createdByUsername
+            updatedByUsername: usernameToShow
           });
         }
       });
-
+      
       combined.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
       setRecentActivity(combined.slice(0, 5));
-    } else if (!loading && users.length === 0) {
-         // Handle case where content is loaded but no users are found
-        setRecentActivity([]); // Clear activity if no users to link
     }
-
-  }, [topics, contents, users, loading, getUserByUid]); // Add users, loading, and getUserByUid as dependencies
+  }, [topics, contents, loading, getChildTopics]);
 
   const formatDateTime = useCallback((date: Date): string => {
     return date.toLocaleString('pt-BR', {
@@ -175,7 +157,7 @@ const HomePage: React.FC = () => {
                           {item.title}
                        </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Atualizado em: {formatDateTime(item.updatedAt)} por {item.createdByUsername}
+                        Atualizado em: {formatDateTime(item.updatedAt)} por {item.updatedByUsername}
                       </p>
                     </div>
                   </Link>

@@ -9,12 +9,14 @@ export interface Topic {
   id: string;
   title: string;
   slug: string;
-  parentId: string | null; // Corrigi para 'parentId' conforme o código do ContentContext
-  createdAt: any; // Usando 'any' para timestamps do Firebase
-  updatedAt: any; // Adicionado: Timestamp da última atualização
+  parentId: string | null;
+  createdAt: any; 
+  updatedAt: any; 
   createdBy: string;
-  updatedBy: string; // Adicionado: UID do último usuário que atualizou
+  updatedBy: string; 
   position: number;
+  createdByUsername?: string; // Novo campo opcional
+  updatedByUsername?: string; // Novo campo opcional
 }
 
 export interface Content {
@@ -22,8 +24,10 @@ export interface Content {
   topicId: string;
   title: string;
   body: string;
-  createdAt: any; // Usando 'any' para timestamps do Firebase
-  updatedAt: any; // Adicionado aqui também para consistência
+  createdAt: any;
+  updatedAt: any;
   createdBy: string;
-  updatedBy: string; // Adicionado aqui também
+  updatedBy: string;
+  createdByUsername?: string; // Novo campo opcional
+  updatedByUsername?: string; // Novo campo opcional
 }

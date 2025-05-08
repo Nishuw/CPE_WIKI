@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AppUser } from '../../types';
 import Button from '../ui/Button';
-import Input from '../ui/Input'; // Assuming Input primarily renders an <input> tag
+import Input from '../ui/Input';
 import { UserIcon, MailIcon, LockIcon, SaveIcon, AlertCircleIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -11,7 +11,6 @@ interface UserProfileFormProps {
 }
 
 const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
-  // ... (state and handlers remain the same) ...
   const { updateUsername, updateUserEmail, updateUserPassword, isLoading: authLoading, error: authError } = useAuth();
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
@@ -26,7 +25,6 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
     setEmail(user.email);
   }, [user]);
 
-  // --- Handlers (handleProfileSubmit, handlePasswordSubmit) - No changes needed ---
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
@@ -37,16 +35,37 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
     const newUsername = username.trim();
     const newEmail = email.trim();
     let profileUpdated = false;
+    let usernameChanged = newUsername !== user.username;
+    let emailChanged = newEmail !== user.email;
 
     try {
-      if (newUsername !== user.username) {
-        await updateUsername(newUsername); profileUpdated = true; toast.success('Nome de usuário atualizado!');
+      if (usernameChanged) {
+        await updateUsername(newUsername); // AuthContext irá disparar o toast de sucesso
+        profileUpdated = true;
       }
-      if (newEmail !== user.email) {
-        await updateUserEmail(newEmail); profileUpdated = true; toast.success('Email atualizado! Verifique sua caixa de entrada para confirmação, se necessário.');
+      if (emailChanged) {
+        await updateUserEmail(newEmail); // AuthContext irá disparar o toast de sucesso
+        profileUpdated = true;
       }
-      if (!profileUpdated && !authError) { toast.info('Nenhuma alteração de perfil detectada.'); }
-    } catch (error) { console.error("Erro ao atualizar perfil:", error); }
+      // Se algo foi realmente tentado (mudança detectada) e não houve erro do AuthContext diretamente,
+      // mas também nenhuma das operações acima disparou um toast de sucesso específico (porque não mudou)
+      // E nenhuma atualização foi feita.
+      if (!profileUpdated && (usernameChanged || emailChanged) && !authError) {
+        // Isso pode acontecer se o updateUsername/Email for chamado, mas internamente decidir não fazer nada (ex: nome não mudou)
+        // E o AuthContext não disparou toast.info. No entanto, o AuthContext já faz isso.
+        // Este toast.info é mais para o caso de o usuário clicar em salvar sem mudar nada.
+      } else if (!profileUpdated && !usernameChanged && !emailChanged && !authError) {
+        toast.info('Nenhuma alteração de perfil detectada.');
+      }
+
+    } catch (error) {
+      // O toast de erro já é tratado pelo AuthContext ou aqui se for um erro de validação
+      // console.error("Erro ao atualizar perfil:", error);
+      // Se o erro não for do AuthContext (que já mostra toast), podemos mostrar um genérico
+      if (!authError) {
+        // Este log é mais para o console, o toast de erro do AuthContext é preferível
+      }
+    }
     finally { setIsSavingProfile(false); }
   };
 
@@ -59,24 +78,23 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
 
     setIsSavingPassword(true);
     try {
-      await updateUserPassword(password);
-      toast.success('Senha atualizada com sucesso!');
-      setPassword(''); setConfirmPassword('');
-    } catch (error) { console.error("Erro ao atualizar senha:", error); }
+      await updateUserPassword(password); // AuthContext irá disparar o toast de sucesso
+      // toast.success('Senha atualizada com sucesso!'); // REMOVIDO - AuthContext já faz isso
+      setPassword(''); 
+      setConfirmPassword('');
+    } catch (error) {
+      // O toast de erro já é tratado pelo AuthContext
+      // console.error("Erro ao atualizar senha:", error);
+    }
     finally { setIsSavingPassword(false); }
   };
-  // --- End Handlers ---
 
   const displayError = localError || authError;
 
-  // ** Classe base para os inputs com padding para o ícone **
-  // Definimos isso aqui para reutilização e fácil ajuste do padding (pl-10)
   const inputBaseClass = "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm";
 
   return (
     <div className="space-y-8">
-
-      {/* Display de Erro Geral */}
       {displayError && !displayError.includes('login novamente') && (
         <div className="p-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200 flex items-center shadow-sm">
            <AlertCircleIcon size={20} className="mr-3 flex-shrink-0 text-red-500"/>
@@ -84,24 +102,17 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
         </div>
       )}
 
-      {/* Seção: Informações do Perfil */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">Informações do Perfil</h2>
         <form className="space-y-5" onSubmit={handleProfileSubmit}>
-
-          {/* Grupo Input: Nome de Usuário */}
           <div>
-            {/* Label posicionado explicitamente FORA do Input */}
             <label htmlFor="profile-username" className="block text-sm font-medium text-gray-700 mb-1">
               Nome de Usuário
             </label>
-            {/* Container Relative para posicionar o ícone */}
             <div className="relative mt-1">
-              {/* Ícone Absoluto dentro do container */}
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
               </div>
-              {/* Componente Input - Passamos a classe com padding */}
               <Input
                 id="profile-username"
                 type="text"
@@ -109,13 +120,11 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
                 placeholder="Seu nome para exibir"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                // Aplicando a classe base que inclui pl-10
                 className={inputBaseClass}
               />
             </div>
           </div>
 
-          {/* Grupo Input: Email */}
           <div>
             <label htmlFor="profile-email" className="block text-sm font-medium text-gray-700 mb-1">
               Email
@@ -132,12 +141,10 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={inputBaseClass}
-                // disabled // Ainda considere desabilitar se a verificação for complexa
               />
             </div>
           </div>
 
-          {/* Botão Salvar Perfil */}
           <div className="flex justify-end pt-2">
              <Button
                 type="submit"
@@ -152,20 +159,15 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
         </form>
       </div>
 
-      {/* Seção: Atualizar Senha */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">Atualizar Senha</h2>
-
           {authError && authError.includes('login novamente') && (
                <div className="mb-6 p-4 text-sm text-blue-700 bg-blue-100 rounded-lg border border-blue-200 flex items-center shadow-sm">
                    <AlertCircleIcon size={20} className="mr-3 flex-shrink-0 text-blue-500"/>
                   <span>{authError}</span>
                </div>
           )}
-
           <form className="space-y-5" onSubmit={handlePasswordSubmit}>
-
-              {/* Grupo Input: Nova Senha */}
               <div>
                  <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
                    Nova Senha
@@ -181,12 +183,10 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
                        placeholder="Mínimo 6 caracteres"
                        value={password}
                        onChange={(e) => setPassword(e.target.value)}
-                       className={inputBaseClass} // Reutiliza a classe base
+                       className={inputBaseClass}
                     />
                  </div>
               </div>
-
-              {/* Grupo Input: Confirmar Nova Senha */}
               <div>
                  <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
                    Confirmar Nova Senha
@@ -202,25 +202,21 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
                        placeholder="Repita a nova senha"
                        value={confirmPassword}
                        onChange={(e) => setConfirmPassword(e.target.value)}
-                       className={inputBaseClass} // Reutiliza a classe base
+                       className={inputBaseClass}
                     />
                  </div>
               </div>
-
-             {/* Erro local específico da senha */}
              {localError && !localError.includes('login novamente') && (
-                 <p className="text-xs text-red-600 flex items-center pt-1"> {/* Adicionado pt-1 para espaçamento */}
+                 <p className="text-xs text-red-600 flex items-center pt-1">
                     <AlertCircleIcon size={14} className="mr-1 flex-shrink-0" /> {localError}
                  </p>
               )}
-
-             {/* Botão Atualizar Senha */}
              <div className="flex justify-end pt-2">
                  <Button
                     type="submit"
                     variant="primary"
                     isLoading={isSavingPassword || authLoading}
-                    disabled={isSavingPassword || authLoading || !password || password.length < 6 || password !== confirmPassword} // Lógica de disabled atualizada
+                    disabled={isSavingPassword || authLoading || !password || password.length < 6 || password !== confirmPassword}
                     icon={<LockIcon size={18} className="mr-2" />}
                   >
                    {isSavingPassword ? 'Atualizando...' : 'Atualizar Senha'}

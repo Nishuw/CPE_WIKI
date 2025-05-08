@@ -3,13 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ContentProvider } from './context/ContentContext';
 import Layout from './components/layout/Layout';
+import { Toaster } from 'react-hot-toast'; // Toaster importado
 
 // Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import TopicPage from './pages/TopicPage';
 import ContentViewPage from './pages/ContentViewPage';
-import UserProfilePage from './pages/UserProfilePage'; // Import UserProfilePage
+import UserProfilePage from './pages/UserProfilePage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -28,40 +29,29 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!isAuthenticated) {
-    // console.log("ProtectedRoute: Not authenticated, navigating to login");
     return <Navigate to="/login" replace />;
   }
-
-  // console.log("ProtectedRoute: Authenticated");
   return <>{children}</>;
 };
 
-// Admin Route Component - Still renders Layout and Outlet internally
+// Admin Route Component - Voltando a renderizar seu próprio Layout
 const AdminRoute: React.FC = () => {
-  const { isAdmin, isLoading, isAuthenticated } = useAuth(); // Get isAuthenticated here too
+  const { isAdmin, isLoading, isAuthenticated } = useAuth();
 
-   // Admin check should happen AFTER authentication is confirmed
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen text-gray-600">Carregando permissões...</div>;
   }
 
-  // If not authenticated at this point, ProtectedRoute should have already redirected. 
-  // But as a fallback or for clarity:
   if (!isAuthenticated) {
-       // This case should ideally not be hit if AdminRoute is nested within ProtectedRoute
-       // console.warn("AdminRoute: Not authenticated, unexpected state.");
        return <Navigate to="/login" replace />;
   }
 
   if (!isAdmin) {
-    // console.log("AdminRoute: Not admin, navigating to home");
     return <Navigate to="/" replace />;
   }
 
-  // console.log("AdminRoute: Is admin");
   return (
-     // Admin content is wrapped in Layout
-    <Layout>
+    <Layout> {/* AdminRoute renderiza Layout e Outlet */}
         <Outlet />
     </Layout>
   );
@@ -71,12 +61,16 @@ function App() {
   return (
     <AuthProvider>
       <ContentProvider>
-        <Router>   
+        <Router>
+          <Toaster // Toaster mantido
+            position="top-right"
+            reverseOrder={false}
+          />
           <Routes>
             {/* Public Route (Login) */}
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Protected Route for User Profile */}
+            {/* Protected Route for User Profile (estrutura anterior) */}
             <Route 
               path="/profile" 
               element={
@@ -86,34 +80,31 @@ function App() {
               }
             />
 
-            {/* Protected Routes (using Layout) */}
-             {/* The root path and other main app routes that use the sidebar/header/layout */}
+            {/* Protected Routes (usando Layout principal) */}
             <Route
               path="/"
-              element={ // Protect these routes and apply the Layout
+              element={
                 <ProtectedRoute>
-                   {/* Render Layout directly here if its children should be the nested routes */}
                   <Layout /> 
                 </ProtectedRoute>
               }
             >
-              {/* Nested protected routes - these will be rendered within the Layout's Outlet */} 
+              {/* Rotas aninhadas que serão renderizadas dentro do Outlet do Layout principal */}
               <Route index element={<HomePage />} />
               <Route path="topics/:topicId" element={<TopicPage />} />
               <Route path="topics/:topicId/content/:contentId" element={<ContentViewPage />} />
             </Route>
 
-            {/* Admin Routes (Protected and Admin-specific, using Layout via AdminRoute) */}
+            {/* Admin Routes (estrutura anterior, AdminRoute com seu próprio Layout) */}
             <Route
               path="/admin"
-              element={ // Protect the entire admin section
-                <ProtectedRoute> {/* Ensures authentication first */}
-                  <AdminRoute /> {/* Ensures admin role and renders nested routes within its Layout */}
+              element={
+                <ProtectedRoute>
+                  <AdminRoute />
                 </ProtectedRoute>
               }
             >
-              {/* Nested Admin routes - rendered via Outlet in AdminRoute */}
-                <Route index element={<AdminDashboard />} />
+              <Route index element={<AdminDashboard />} />
               <Route path="topics" element={<TopicManagementPage />} />
               <Route path="topics/new" element={<NewTopicPage />} />
               <Route path="topics/:topicId" element={<TopicDetailPage />} />
@@ -121,7 +112,7 @@ function App() {
               <Route path="users" element={<UserManagementPage />} />
             </Route>
 
-            {/* Fallback Route - Redirect to root, which is protected by ProtectedRoute */}
+            {/* Fallback Route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
