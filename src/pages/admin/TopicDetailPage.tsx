@@ -49,7 +49,7 @@ const TopicDetailPage: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">{topic.title}</h1>
         <p className="text-gray-600 mt-2">
-          Manage content and subtopics for this topic.
+          Gerenciar conteúdo e subtópicos para este tópico.
         </p>
       </div>
       
