@@ -16,12 +16,20 @@ import {
   onSnapshot
 } from 'firebase/firestore';
 
+// Interface para o alerta da HomePage
+export interface HomePageAlert {
+  alertaTexto: string;
+  alertaAtivo: boolean;
+}
+
 interface ContentContextType {
   topics: Topic[];
   contents: Content[];
   users: User[];
   loading: boolean;
   error: string | null;
+  homePageAlert: HomePageAlert | null;
+  loadingHomePageAlert: boolean;
   addTopic: (title: string, parentId: string | null) => Promise<void>;
   updateTopic: (id: string, title: string) => Promise<void>;
   deleteTopic: (id: string) => Promise<void>;
@@ -50,18 +58,28 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loading = loadingTopics || loadingContents || loadingUsers;
+  const [homePageAlert, setHomePageAlert] = useState<HomePageAlert | null>(null);
+  const [loadingHomePageAlert, setLoadingHomePageAlert] = useState(true);
+
+  const loading = loadingTopics || loadingContents || loadingUsers || loadingHomePageAlert;
 
   useEffect(() => {
     if (!isAuthenticated) {
       setTopics([]);
       setContents([]);
       setUsers([]);
+      setHomePageAlert({ alertaTexto: '', alertaAtivo: false });
       setLoadingTopics(false);
       setLoadingContents(false);
       setLoadingUsers(false);
+      setLoadingHomePageAlert(false);
       return;
     }
+    
+    setLoadingTopics(true);
+    setLoadingContents(true);
+    setLoadingUsers(true);
+    setLoadingHomePageAlert(true);
 
     const topicsQuery = query(collection(db, 'topics'));
     const unsubscribeTopics = onSnapshot(topicsQuery, (snapshot) => {
@@ -99,10 +117,25 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setLoadingUsers(false);
     });
 
+    const alertDocRef = doc(db, 'configuracoesSite', 'mensagemHomePage');
+    const unsubscribeAlert = onSnapshot(alertDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setHomePageAlert(docSnap.data() as HomePageAlert);
+      } else {
+        setHomePageAlert({ alertaTexto: '', alertaAtivo: false }); // Default se não existir
+      }
+      setLoadingHomePageAlert(false);
+    }, (err) => {
+      // console.error("ContentContext: Error listening to homepage alert:", err);
+      setLoadingHomePageAlert(false);
+      setHomePageAlert({ alertaTexto: '', alertaAtivo: false }); // Estado padrão em caso de erro
+    });
+
     return () => {
       unsubscribeTopics();
       unsubscribeContents();
       unsubscribeUsers();
+      unsubscribeAlert();
     }
 
   }, [isAuthenticated]);
@@ -312,6 +345,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       users,
       loading,
       error,
+      homePageAlert,
+      loadingHomePageAlert,
       addTopic,
       updateTopic,
       deleteTopic,
