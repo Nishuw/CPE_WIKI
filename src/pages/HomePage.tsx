@@ -200,7 +200,8 @@ const HomePage: React.FC = () => {
             <div className="ml-3 flex-grow">
               <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Mensagem Importante</h3>
               <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-100">
-                <p>
+                {/* Adicionada a classe whitespace-pre-line para preservar quebras de linha */}
+                <p className="whitespace-pre-line">
                   {homePageAlert.alertaTexto}
                 </p>
               </div>
